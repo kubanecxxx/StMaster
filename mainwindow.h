@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 
+#define SET_THEME() QIcon::setThemeName("mate")
+
 namespace Ui {
 class MainWindow;
 }

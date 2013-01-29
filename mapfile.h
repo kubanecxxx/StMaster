@@ -4,8 +4,6 @@
 #include <QObject>
 #include <QMap>
 #include <QFile>
-#include <QList>
-#include "variable.h"
 #include "mainwindow.h"
 #include <QFileSystemWatcher>
 

@@ -11,6 +11,7 @@
 #include "hled.h"
 #include <QLabel>
 #include "qcustomplot.h"
+#include "plotconfigurationdialog.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -36,7 +37,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(this,SIGNAL(TimerStop()),Timer,SLOT(stop()));
     connect(Timer,SIGNAL(timeout()),this,SLOT(Timeout()));
 
-    QIcon::setThemeName("mate");
+    SET_THEME();
     ui->actionNew->setIcon(QIcon::fromTheme("document-new"));
     ui->actionSave->setIcon(QIcon::fromTheme("document-save"));
     ui->actionSaveAs->setIcon(QIcon::fromTheme("document-save-as"));
@@ -222,7 +223,39 @@ void MainWindow::on_actionMapFile_triggered()
 
 void MainWindow::on_actionAdd_new_plot_triggered()
 {
+    QCustomPlot * plot = new QCustomPlot;
+    plot->setTitle("newPlot");
+    plot->setProperty("xAutoScale",true);
+    plot->setProperty("yAutoScale",false);
+    plot->setProperty("MaxPoints",200);
+    plot->setProperty("xValueTime",false);
+    //plot->setProperty("xValue");
 
+
+    Variable * var;
+    var = new Variable(client,this);
+    variables.push_back(var);
+    var = new Variable(client,this);
+    variables.push_back(var);
+    var = new Variable(client,this);
+    variables.push_back(var);
+    var = new Variable(client,this);
+    variables.push_back(var);
+    RefreshTable();
+
+    plot->addGraph();
+    plot->graph(0)->setPen(QPen(Qt::blue));
+    plot->graph(0)->setProperty("Variable",*var);
+
+    PlotConfigurationDialog dlg(*plot,variables,this);
+    if (dlg.exec() == QDialog::Accepted)
+    {
+
+    }
+    else
+    {
+        plot->deleteLater();
+    }
 }
 
 void MainWindow::on_actionEdit_plot_triggered()

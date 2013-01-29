@@ -1,6 +1,7 @@
 #include "qtablewidgetkrida.h"
 #include <QMenu>
 #include <QContextMenuEvent>
+#include "mainwindow.h"
 
 QTableWidgetKrida::QTableWidgetKrida(QWidget *parent) :
     QTableWidget(parent)
@@ -14,7 +15,7 @@ QTableWidgetKrida::QTableWidgetKrida(QWidget *parent) :
     connect(Edit,SIGNAL(triggered()),this,SLOT(SlotEdit()));
     connect(Remove,SIGNAL(triggered()),this,SLOT(SlotRemove()));
 
-    QIcon::setThemeName("mate");
+    SET_THEME();
     Add->setIcon(QIcon::fromTheme("document-new"));
     Remove->setIcon(QIcon::fromTheme("edit-cut"));
     Edit->setIcon(QIcon::fromTheme("edit-copy"));

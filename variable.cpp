@@ -1,10 +1,14 @@
 #include "variable.h"
 #include <QtEndian>
+#include "kelnetclient.h"
+#include <QTimer>
+
+int Variable::cant = 0;
 
 Variable::Variable(KelnetClient * kelnet, QObject *parent) :
     QObject(parent),
     client(*kelnet),
-    Name("Variable"),
+    Name(QString("Variable %1").arg(cant++)),
     TypeString("uint32"),
     Address(0x20000000),
     Value(0),
@@ -178,3 +182,5 @@ void Variable::resize()
     else if (Type == uint64 || Type == int64 || Type == double_t)
         size = 8;
 }
+
+int Variable::RefreshTime() const {return timer->interval();}

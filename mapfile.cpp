@@ -1,5 +1,6 @@
 #include "mapfile.h"
 #include "mainwindow.h"
+#include "variable.h"
 
 MapFileClass::MapFileClass(QString & file, MainWindow::VarList_t & vars , QObject *parent) :
     QObject(parent),

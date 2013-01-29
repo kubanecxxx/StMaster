@@ -22,7 +22,9 @@ SOURCES += main.cpp\
     qtablewidgetkrida.cpp \
     qcustomplot.cpp \
     plotproperties.cpp \
-    plotconfigurationdialog.cpp
+    plotconfigurationdialog.cpp \
+    qlistwidgetdrag.cpp \
+    qtablewidgetdrop.cpp
 
 HEADERS  += mainwindow.h \
     kelnetclient.h \
@@ -33,7 +35,9 @@ HEADERS  += mainwindow.h \
     qtablewidgetkrida.h \
     qcustomplot.h \
     plotproperties.h \
-    plotconfigurationdialog.h
+    plotconfigurationdialog.h \
+    qlistwidgetdrag.h \
+    qtablewidgetdrop.h
 
 FORMS    += mainwindow.ui \
     variabledialog.ui \

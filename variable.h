@@ -3,15 +3,16 @@
 
 #include <QObject>
 #include <QTimer>
-#include "kelnetclient.h"
+#include <QVariant>
 
+class KelnetClient;
 class Variable : public QObject
 {
     Q_OBJECT
 public:
     explicit Variable(KelnetClient * kelnet,QObject *parent);
     Variable(const Variable & cpy);
-    int RefreshTime() const {return timer->interval();}
+    int RefreshTime() const ;
     
     typedef enum {uint8,uint16,uint32,uint64,int8,int16,int32,int64,float_t,double_t} type_t;
 
@@ -22,6 +23,12 @@ public:
     QString GetType() const {return TypeString;}
     QString GetData() ;
     double GetDouble() {GetData(); return vall;}
+
+    operator QVariant()
+    {
+        return QVariant::fromValue(this);
+    }
+
 
 signals:
     void VariableChanged(QByteArray & val);
@@ -49,9 +56,11 @@ private:
     double vall;
     int base;
 
-
+    static int cant;
     friend class VariableDialog;
     friend class MapFileClass;
 };
+
+Q_DECLARE_METATYPE(Variable*)
 
 #endif // VARIABLE_H
