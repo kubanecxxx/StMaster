@@ -19,7 +19,10 @@ SOURCES += main.cpp\
     hled.cpp \
     mapfile.cpp \
     variabledialog.cpp \
-    qtablewidgetkrida.cpp
+    qtablewidgetkrida.cpp \
+    qcustomplot.cpp \
+    plotproperties.cpp \
+    plotconfigurationdialog.cpp
 
 HEADERS  += mainwindow.h \
     kelnetclient.h \
@@ -27,10 +30,14 @@ HEADERS  += mainwindow.h \
     hled.h \
     mapfile.h \
     variabledialog.h \
-    qtablewidgetkrida.h
+    qtablewidgetkrida.h \
+    qcustomplot.h \
+    plotproperties.h \
+    plotconfigurationdialog.h
 
 FORMS    += mainwindow.ui \
-    variabledialog.ui
+    variabledialog.ui \
+    plotconfigurationdialog.ui
 
 CONFIG += qxt
 QXT += core gui

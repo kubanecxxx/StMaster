@@ -4,7 +4,6 @@
 #include <QObject>
 #include <QTcpSocket>
 #include <QThread>
-#include <QSemaphore>
 #include <QMutex>
 
 class KelnetClient : public QThread

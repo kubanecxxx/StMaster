@@ -6,6 +6,11 @@
 #include "variabledialog.h"
 #include <QFileDialog>
 #include "mapfile.h"
+#include "kelnetclient.h"
+#include "variable.h"
+#include "hled.h"
+#include <QLabel>
+#include "qcustomplot.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -14,7 +19,6 @@ MainWindow::MainWindow(QWidget *parent) :
     Map(NULL)
 {
     ui->setupUi(this);
-
     connect(client,SIGNAL(Connected()),this,SLOT(Connected()));
     connect(client,SIGNAL(Disconnected()),this,SLOT(Disconnected()));
     connect(client,SIGNAL(CoreStatus(QString&)),this,SLOT(NewCoreStatus(QString&)));
@@ -39,6 +43,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->actionOpen->setIcon(QIcon::fromTheme("document-open"));
     ui->actionConnect->setIcon(QIcon::fromTheme("network-wired"));
     ui->actionMapFile->setIcon(QIcon::fromTheme("preferences-system"));
+    ui->actionAdd_new_plot->setIcon(QIcon::fromTheme("document-new"));
+    ui->actionEdit_plot->setIcon(QIcon::fromTheme("edit-copy"));
+    ui->actionRemove_plot->setIcon(QIcon::fromTheme("edit-cut"));
 
     MapFile = new QLabel(this);
     MapFile->setText("No map file");
@@ -56,6 +63,13 @@ MainWindow::MainWindow(QWidget *parent) :
 
     MapFilePath = "/home/kubanec/workspace/ARMCM4-STM32F407-DISCOVERY/build/test.map";
     Map = new MapFileClass(MapFilePath, variables,this);
+
+    //upper part with plots
+    GraphSplitter = new QSplitter();
+    ui->verticalLayout_2->addWidget(GraphSplitter);
+    GraphSplitter->setOrientation(Qt::Vertical);
+    GraphSplitter->setContextMenuPolicy(Qt::ActionsContextMenu);
+    GraphSplitter->addAction(ui->actionAdd_new_plot);
 }
 
 MainWindow::~MainWindow()
@@ -204,4 +218,19 @@ void MainWindow::on_actionMapFile_triggered()
         MapFile->setText(MapFilePath);
         Map->SetFile(MapFilePath);
     }
+}
+
+void MainWindow::on_actionAdd_new_plot_triggered()
+{
+
+}
+
+void MainWindow::on_actionEdit_plot_triggered()
+{
+
+}
+
+void MainWindow::on_actionRemove_plot_triggered()
+{
+
 }

@@ -2,16 +2,18 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "kelnetclient.h"
-#include "variable.h"
-#include "hled.h"
-#include <QLabel>
-
 
 namespace Ui {
 class MainWindow;
 }
 
+class PlotProperties;
+class QSplitter;
+class QLabel;
+class QCustomPlot;
+class HLed;
+class Variable;
+class KelnetClient;
 class MapFileClass;
 class MainWindow : public QMainWindow
 {
@@ -35,10 +37,12 @@ private:
     QString MapFilePath;
     MapFileClass * Map;
 
+    typedef QList<PlotProperties *> plot_list_t;
 
+    plot_list_t * PlotList;
+    QSplitter * GraphSplitter;
 
     void FillRow(int row,const Variable & var);
-
 
 signals:
     void TimerStart();
@@ -59,6 +63,9 @@ private slots:
 
     void on_actionConnect_triggered();
     void on_actionMapFile_triggered();
+    void on_actionAdd_new_plot_triggered();
+    void on_actionEdit_plot_triggered();
+    void on_actionRemove_plot_triggered();
 };
 
 #endif // MAINWINDOW_H

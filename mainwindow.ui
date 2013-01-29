@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>628</width>
-    <height>304</height>
+    <height>410</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -23,6 +23,18 @@
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QSplitter" name="splitter">
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="lineWidth">
+       <number>1</number>
+      </property>
+      <property name="midLineWidth">
+       <number>0</number>
+      </property>
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
@@ -39,6 +51,7 @@
        <property name="frameShadow">
         <enum>QFrame::Raised</enum>
        </property>
+       <layout class="QVBoxLayout" name="verticalLayout_2"/>
       </widget>
       <widget class="QTableWidgetKrida" name="Table">
        <property name="minimumSize">
@@ -158,6 +171,21 @@
    </property>
    <property name="toolTip">
     <string>Set map file</string>
+   </property>
+  </action>
+  <action name="actionAdd_new_plot">
+   <property name="text">
+    <string>Add new plot</string>
+   </property>
+  </action>
+  <action name="actionEdit_plot">
+   <property name="text">
+    <string>Edit plot</string>
+   </property>
+  </action>
+  <action name="actionRemove_plot">
+   <property name="text">
+    <string>Remove plot</string>
    </property>
   </action>
  </widget>

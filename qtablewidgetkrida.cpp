@@ -13,6 +13,11 @@ QTableWidgetKrida::QTableWidgetKrida(QWidget *parent) :
     connect(Add,SIGNAL(triggered()),this,SIGNAL(AddNewRow()));
     connect(Edit,SIGNAL(triggered()),this,SLOT(SlotEdit()));
     connect(Remove,SIGNAL(triggered()),this,SLOT(SlotRemove()));
+
+    QIcon::setThemeName("mate");
+    Add->setIcon(QIcon::fromTheme("document-new"));
+    Remove->setIcon(QIcon::fromTheme("edit-cut"));
+    Edit->setIcon(QIcon::fromTheme("edit-copy"));
 }
 
 void QTableWidgetKrida::contextMenuEvent(QContextMenuEvent * event)
