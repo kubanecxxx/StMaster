@@ -72,6 +72,10 @@ MainWindow::MainWindow(QWidget *parent) :
     GraphSplitter->setOrientation(Qt::Vertical);
     GraphSplitter->setContextMenuPolicy(Qt::ActionsContextMenu);
     GraphSplitter->addAction(ui->actionAdd_new_plot);
+    plotMenu = new QMenu(this);
+    plotMenu->addAction(ui->actionAdd_new_plot);
+    plotMenu->addAction(ui->actionEdit_plot);
+    plotMenu->addAction(ui->actionRemove_plot);
 }
 
 MainWindow::~MainWindow()
@@ -229,7 +233,7 @@ void MainWindow::on_actionAdd_new_plot_triggered()
     plot->setProperty("xAutoScale",true);
     plot->setProperty("yAutoScale",false);
     plot->setProperty("MaxPoints",200);
-    plot->setProperty("xValueTime",false);
+    plot->setProperty("xValueTime",true);
     //plot->setProperty("xValue");
 
 
@@ -251,10 +255,9 @@ void MainWindow::on_actionAdd_new_plot_triggered()
     PlotConfigurationDialog dlg(*plot,variables,this);
     if (dlg.exec() == QDialog::Accepted)
     {
-        plot->addAction(ui->actionAdd_new_plot);
-        plot->addAction(ui->actionEdit_plot);
-        plot->addAction(ui->actionRemove_plot);
-        plot->setContextMenuPolicy(Qt::ActionsContextMenu);
+        plot->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(plot,SIGNAL(customContextMenuRequested(QPoint)),this,
+                SLOT(PlotContextMenuRequest(QPoint)));
         PlotList.push_back(plot);
         GraphSplitter->addWidget(plot);
     }
@@ -266,13 +269,37 @@ void MainWindow::on_actionAdd_new_plot_triggered()
 
 void MainWindow::on_actionEdit_plot_triggered()
 {
+    QAction * action = qobject_cast<QAction *>(sender());
+    QCustomPlot * plot =qobject_cast<QCustomPlot*>
+            (action->property("Plot").value<QWidget*>());
 
+    Q_ASSERT(plot);
+
+    PlotConfigurationDialog dlg(*plot,variables,this);
+    if(dlg.exec() == QDialog::Accepted)
+    {
+        plot->replot();
+    }
 }
 
 void MainWindow::on_actionRemove_plot_triggered()
 {
     QAction * action = qobject_cast<QAction *>(sender());
-    QCustomPlot * plot = qobject_cast<QCustomPlot *>(action->menu()->parent());
+    QCustomPlot * plot =qobject_cast<QCustomPlot*>
+            (action->property("Plot").value<QWidget*>());
 
+    Q_ASSERT(plot);
 
+    PlotList.removeOne(plot);
+    plot->deleteLater();
+}
+
+void MainWindow::PlotContextMenuRequest(QPoint)
+{
+    QCustomPlot * plot = qobject_cast<QCustomPlot *>(sender());
+    ui->actionEdit_plot->setText(QString("Edit \"%1\"").arg(plot->title()));
+    ui->actionRemove_plot->setText(QString("Remove \"%1\"").arg(plot->title()));
+    ui->actionEdit_plot->setProperty("Plot",QVariant::fromValue((QWidget *)plot));
+    ui->actionRemove_plot->setProperty("Plot",QVariant::fromValue((QWidget *)plot));
+    plotMenu->popup(QCursor::pos());
 }

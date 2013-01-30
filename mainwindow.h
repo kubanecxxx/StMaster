@@ -45,6 +45,7 @@ private:
     QSplitter * GraphSplitter;
 
     void FillRow(int row,const Variable & var);
+    QMenu * plotMenu;
 
 signals:
     void TimerStart();
@@ -62,6 +63,8 @@ private slots:
     void AddNewRow(void);
     void EditRow(int row);
     void RemoveRow(int row);
+
+    void PlotContextMenuRequest(QPoint point);
 
     void on_actionConnect_triggered();
     void on_actionMapFile_triggered();

@@ -43,6 +43,7 @@ PlotConfigurationDialog::PlotConfigurationDialog(
         Variable & var = *vars.at(i);
         QStandardItem * item = new QStandardItem(var.GetName());
         item->setData(var);
+        Q_ASSERT(item->data().toVariable());
         modelList->appendRow(item);
         ui->comboXValue->addItem(var.GetName(),var);
     }
@@ -75,6 +76,7 @@ PlotConfigurationDialog::PlotConfigurationDialog(
     else
     {
         Variable * var = Plot.property("xValue").toVariable();
+        Q_ASSERT(var);
         int i = ui->comboXValue->findData(*var);
         if (i == -1)
             i = 0;
@@ -131,6 +133,7 @@ void PlotConfigurationDialog::on_buttonBox_accepted()
     /*******************************************************************
      * setup axis limits from spin boxes
      * @todo (dis)connect signals plot to autoscaling
+     * @todo (dis)connect signals directly from variable
      ******************************************************************/
     bool check;
     Plot.setProperty("xAutoScale",check = ui->checkXAutoScale->isChecked());
@@ -152,9 +155,14 @@ void PlotConfigurationDialog::on_buttonBox_accepted()
     for(int i = 0 ; i < modelTable->rowCount(); i++)
     {
         Plot.addGraph();
+
+        Variable * var;
+        var = modelTable->item(i,0)->data().toVariable();
+        Q_ASSERT(var);
+        Plot.graph(i)->setProperty("Variable",*var);
+
         QColor color = modelTable->item(i,1)->data(Qt::BackgroundColorRole).value<QColor>();
         Plot.graph(i)->setPen(QPen(color));
-        Plot.graph(i)->setProperty("Variable",modelTable->property("Variable"));
     }
     /*******************************************************************
      * setup title, x-value and maximum points
