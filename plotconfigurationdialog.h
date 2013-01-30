@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <mainwindow.h>
 #include <QTableWidgetItem>
+#include "dragdropmodel.h"
 
 namespace Ui {
 class PlotConfigurationDialog;
@@ -20,7 +21,7 @@ public:
     ~PlotConfigurationDialog();
     
 private slots:
-    void CellActivated(QTableWidgetItem * item);
+    void CellActivated(QModelIndex index);
     void DeleteVariable();
     void TableContextMenuRequest(QPoint point);
 
@@ -33,6 +34,8 @@ private:
 
 
     QMenu * TableMenu;
+    DragDropModel * modelList;
+    DragDropModel * modelTable;
 };
 
 #endif // PLOTCONFIGURATIONDIALOG_H

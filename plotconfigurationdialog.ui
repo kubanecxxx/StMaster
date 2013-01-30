@@ -31,7 +31,7 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
-        <widget class="QTableWidget" name="tableUsedVaribles">
+        <widget class="QTableView" name="tableUsedVaribles">
          <property name="acceptDrops">
           <bool>true</bool>
          </property>
@@ -62,9 +62,6 @@
          <property name="showGrid">
           <bool>false</bool>
          </property>
-         <property name="columnCount">
-          <number>2</number>
-         </property>
          <attribute name="horizontalHeaderVisible">
           <bool>true</bool>
          </attribute>
@@ -72,18 +69,8 @@
           <bool>true</bool>
          </attribute>
          <attribute name="verticalHeaderVisible">
-          <bool>false</bool>
+          <bool>true</bool>
          </attribute>
-         <column>
-          <property name="text">
-           <string>Variable</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Color</string>
-          </property>
-         </column>
         </widget>
        </item>
       </layout>
@@ -94,9 +81,12 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <widget class="QListWidget" name="listVariables">
+        <widget class="QListView" name="listVariables">
          <property name="acceptDrops">
           <bool>false</bool>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
          </property>
          <property name="dragEnabled">
           <bool>true</bool>
@@ -105,7 +95,7 @@
           <bool>false</bool>
          </property>
          <property name="dragDropMode">
-          <enum>QAbstractItemView::NoDragDrop</enum>
+          <enum>QAbstractItemView::DragOnly</enum>
          </property>
         </widget>
        </item>

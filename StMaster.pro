@@ -19,12 +19,11 @@ SOURCES += main.cpp\
     hled.cpp \
     mapfile.cpp \
     variabledialog.cpp \
-    qtablewidgetkrida.cpp \
     qcustomplot.cpp \
     plotproperties.cpp \
     plotconfigurationdialog.cpp \
-    qlistwidgetdrag.cpp \
-    qtablewidgetdrop.cpp
+    dragdropmodel.cpp \
+    qtablewidgetkrida.cpp
 
 HEADERS  += mainwindow.h \
     kelnetclient.h \
@@ -36,8 +35,7 @@ HEADERS  += mainwindow.h \
     qcustomplot.h \
     plotproperties.h \
     plotconfigurationdialog.h \
-    qlistwidgetdrag.h \
-    qtablewidgetdrop.h
+    dragdropmodel.h
 
 FORMS    += mainwindow.ui \
     variabledialog.ui \

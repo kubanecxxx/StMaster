@@ -39,9 +39,9 @@ private:
     QString MapFilePath;
     MapFileClass * Map;
 
-    typedef QList<PlotProperties *> plot_list_t;
+    typedef QList<QCustomPlot *> plot_list_t;
 
-    plot_list_t * PlotList;
+    plot_list_t PlotList;
     QSplitter * GraphSplitter;
 
     void FillRow(int row,const Variable & var);

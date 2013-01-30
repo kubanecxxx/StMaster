@@ -5,10 +5,16 @@
 #include <QColorDialog>
 #include <QMenu>
 #include <QPoint>
-#include <QAbstractItemModel>
+#include <QStandardItemModel>
+#include <QPen>
 
 #define toVariable()  value<Variable*>()
 
+/*******************************************************************
+ * Constructor
+ * fill all widget from passed plot
+ * and variable list
+ ******************************************************************/
 PlotConfigurationDialog::PlotConfigurationDialog(
         QCustomPlot & plot,MainWindow::VarList_t & vars,QWidget *parent) :
     QDialog(parent),
@@ -17,6 +23,14 @@ PlotConfigurationDialog::PlotConfigurationDialog(
 {
     ui->setupUi(this);
     SET_THEME();
+    /*******************************************************************
+     * setup models
+     ******************************************************************/
+    modelList = new DragDropModel();
+    modelTable = new DragDropModel();
+
+    ui->listVariables->setModel(modelList);
+    ui->tableUsedVaribles->setModel(modelTable);
 
     /*******************************************************************
      * fill combo box x-value and availible variables list
@@ -27,9 +41,9 @@ PlotConfigurationDialog::PlotConfigurationDialog(
     for (int i = 0 ; i < vars.count(); i++)
     {
         Variable & var = *vars.at(i);
-        QListWidgetItem * item = new QListWidgetItem(var.GetName());
-        item->setData(Qt::UserRole,var);
-        ui->listVariables->addItem(item);
+        QStandardItem * item = new QStandardItem(var.GetName());
+        item->setData(var);
+        modelList->appendRow(item);
         ui->comboXValue->addItem(var.GetName(),var);
     }
 
@@ -69,14 +83,15 @@ PlotConfigurationDialog::PlotConfigurationDialog(
 
     /*******************************************************************
      * setup used variables table
-     ******************************************************************/
-    ui->tableUsedVaribles->setRowCount(Plot.graphCount());
-    connect(ui->tableUsedVaribles,SIGNAL(itemDoubleClicked(QTableWidgetItem*)),
-            this,SLOT(CellActivated(QTableWidgetItem*)));
-
+     ******************************************************************/ 
+    connect(ui->tableUsedVaribles,SIGNAL(doubleClicked(QModelIndex)),
+            this,SLOT(CellActivated(QModelIndex)));
     ui->tableUsedVaribles->setContextMenuPolicy(Qt::CustomContextMenu);
-    ui->tableUsedVaribles->model()->
+    ui->tableUsedVaribles->verticalHeader()->setVisible(false);
 
+    QStringList header;
+    header << "Variable" << "Color";
+    modelTable->setHorizontalHeaderLabels(header);
     connect(ui->tableUsedVaribles,SIGNAL(customContextMenuRequested(QPoint)),
             this,SLOT(TableContextMenuRequest(QPoint)));
 
@@ -92,43 +107,113 @@ PlotConfigurationDialog::PlotConfigurationDialog(
         Q_ASSERT(var != NULL);
         QPen pen = Plot.graph(i)->pen();
 
-        QTableWidgetItem * name;
-        QTableWidgetItem * color;
+        QStandardItem * name;
+        QStandardItem * color;
 
-        name = new QTableWidgetItem(var->GetName());
-        color = new QTableWidgetItem;
-        color->setBackgroundColor(pen.color());
+        name = new QStandardItem(var->GetName());
+        name->setData(*var);
+        color = new QStandardItem;
+        color->setData(pen.color(),Qt::BackgroundColorRole);
 
-        ui->tableUsedVaribles->setItem(i,0,name);
-        ui->tableUsedVaribles->setItem(i,1,color);
+        QList<QStandardItem *> list;
+        list.push_back(name);
+        list.push_back(color);
+        modelTable->appendRow(list);
     }
 }
 
-void PlotConfigurationDialog::CellActivated(QTableWidgetItem * item)
+/*******************************************************************
+ * accept slot
+ * fill Plot with all settings
+ ******************************************************************/
+void PlotConfigurationDialog::on_buttonBox_accepted()
 {
-    if (item->column() == 1)
+    /*******************************************************************
+     * setup axis limits from spin boxes
+     * @todo (dis)connect signals plot to autoscaling
+     ******************************************************************/
+    bool check;
+    Plot.setProperty("xAutoScale",check = ui->checkXAutoScale->isChecked());
+    if (!check)
     {
-        QColor color = QColorDialog::getColor(item->backgroundColor(),
+        Plot.xAxis->setRangeLower(ui->spinXMin->value());
+        Plot.xAxis->setRangeUpper(ui->spinXMax->value());
+    }
+    Plot.setProperty("yAutoScale",check = ui->checkYAutoScale->isChecked());
+    if (!check)
+    {
+        Plot.yAxis->setRangeLower(ui->spinYMin->value());
+        Plot.yAxis->setRangeUpper(ui->spinYMax->value());
+    }
+    /*******************************************************************
+     * set graphcount and colors from tableusedvariables
+     ******************************************************************/
+    Plot.clearGraphs();
+    for(int i = 0 ; i < modelTable->rowCount(); i++)
+    {
+        Plot.addGraph();
+        QColor color = modelTable->item(i,1)->data(Qt::BackgroundColorRole).value<QColor>();
+        Plot.graph(i)->setPen(QPen(color));
+        Plot.graph(i)->setProperty("Variable",modelTable->property("Variable"));
+    }
+    /*******************************************************************
+     * setup title, x-value and maximum points
+     ******************************************************************/
+    if (ui->comboXValue->currentIndex() == 0)
+    {
+        Plot.setProperty("xValueTime",true);
+    }
+    else
+    {
+        Plot.setProperty("xValueTime",false);
+        Plot.setProperty("xValue",ui->comboXValue->itemData(ui->comboXValue->currentIndex()));
+    }
+    Plot.setProperty("MaxPoints",ui->spinMaxPoints->value());
+    Plot.setTitle(ui->lineTitle->text());
+
+    accept();
+}
+
+/******************************************************************
+ * double clicked on cell with color
+ * shows color dialog...
+ ******************************************************************/
+void PlotConfigurationDialog::CellActivated(QModelIndex index)
+{
+    if (index.column() == 1)
+    {
+        QColor color = QColorDialog::getColor(index.data(Qt::BackgroundColorRole).value<QColor>(),
                                this,"Line color");
 
         if (color.isValid())
-            item->setBackgroundColor(color);
+        {
+            QStandardItem * item = modelTable->item(index.row(),index.column());
+            item->setData(color,Qt::BackgroundColorRole);
+        }
     }
 }
 
+/*******************************************************************
+ * custom menu on tableusedvariables
+ * with delete action
+ ******************************************************************/
 void PlotConfigurationDialog::TableContextMenuRequest(QPoint point)
 {
     int row = ui->tableUsedVaribles->rowAt(point.y());
     if (row != -1)
     {
-        QTableWidgetItem * item = ui->tableUsedVaribles->item(row,0);
-        QString text = QString("Delete %1").arg(item->text());
+        QStandardItem * item = modelTable->item(row);
+        Q_ASSERT(item);
+        QString text = QString("Delete %1").arg(item->data(Qt::DisplayRole).toString());
         TableMenu->actions().at(0)->setText(text);
         TableMenu->actions().at(0)->setProperty("Row",row);
         TableMenu->popup(QCursor::pos());
     }
 }
 
+/*******************************************************************
+ * remove table line - connected to action delete
+ ******************************************************************/
 void PlotConfigurationDialog::DeleteVariable()
 {
     bool ok;
@@ -136,7 +221,7 @@ void PlotConfigurationDialog::DeleteVariable()
     int row = act->property("Row").toInt(&ok);
     Q_ASSERT(ok);
 
-    ui->tableUsedVaribles->removeRow(row);
+    modelTable->removeRow(row);
 }
 
 PlotConfigurationDialog::~PlotConfigurationDialog()
@@ -144,7 +229,4 @@ PlotConfigurationDialog::~PlotConfigurationDialog()
     delete ui;
 }
 
-void PlotConfigurationDialog::on_buttonBox_accepted()
-{
-    accept();
-}
+

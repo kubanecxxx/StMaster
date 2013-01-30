@@ -12,6 +12,7 @@
 #include <QLabel>
 #include "qcustomplot.h"
 #include "plotconfigurationdialog.h"
+#include <QSplitter>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -46,7 +47,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->actionMapFile->setIcon(QIcon::fromTheme("preferences-system"));
     ui->actionAdd_new_plot->setIcon(QIcon::fromTheme("document-new"));
     ui->actionEdit_plot->setIcon(QIcon::fromTheme("edit-copy"));
-    ui->actionRemove_plot->setIcon(QIcon::fromTheme("edit-cut"));
+    ui->actionRemove_plot->setIcon(QIcon::fromTheme("edit-delete"));
 
     MapFile = new QLabel(this);
     MapFile->setText("No map file");
@@ -250,7 +251,12 @@ void MainWindow::on_actionAdd_new_plot_triggered()
     PlotConfigurationDialog dlg(*plot,variables,this);
     if (dlg.exec() == QDialog::Accepted)
     {
-
+        plot->addAction(ui->actionAdd_new_plot);
+        plot->addAction(ui->actionEdit_plot);
+        plot->addAction(ui->actionRemove_plot);
+        plot->setContextMenuPolicy(Qt::ActionsContextMenu);
+        PlotList.push_back(plot);
+        GraphSplitter->addWidget(plot);
     }
     else
     {
@@ -265,5 +271,8 @@ void MainWindow::on_actionEdit_plot_triggered()
 
 void MainWindow::on_actionRemove_plot_triggered()
 {
+    QAction * action = qobject_cast<QAction *>(sender());
+    QCustomPlot * plot = qobject_cast<QCustomPlot *>(action->menu()->parent());
+
 
 }
