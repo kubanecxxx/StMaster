@@ -37,6 +37,7 @@ private:
 
     void run();
     QMutex mutex;
+    QMutex mutex2;
 
     
 };

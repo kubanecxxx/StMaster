@@ -13,6 +13,7 @@
 #include "qcustomplot.h"
 #include "plotconfigurationdialog.h"
 #include <QSplitter>
+#include "plotwidget.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -74,8 +75,39 @@ MainWindow::MainWindow(QWidget *parent) :
     GraphSplitter->addAction(ui->actionAdd_new_plot);
     plotMenu = new QMenu(this);
     plotMenu->addAction(ui->actionAdd_new_plot);
+    plotMenu->addSeparator();
     plotMenu->addAction(ui->actionEdit_plot);
     plotMenu->addAction(ui->actionRemove_plot);
+/*
+    Variable * var = new Variable(client,this);
+    var->Address = 0x20000a08;
+    var->OnlyAddress =true;
+    var->SetRefreshTime(100);
+    var->Type = Variable::uint8;
+    var->size = 1;
+    connect(var,SIGNAL(VariableChanged(QByteArray&)),this,SLOT(VariableModified(QByteArray&)));
+    variables.push_back(var);
+
+    var = new Variable(client,this);
+    var->Address = 0x20000800;
+    var->OnlyAddress =true;
+    var->SetRefreshTime(100);
+    var->Type = Variable::uint8;
+    var->size = 1;
+    connect(var,SIGNAL(VariableChanged(QByteArray&)),this,SLOT(VariableModified(QByteArray&)));
+    variables.push_back(var);
+
+    var = new Variable(client,this);
+    var->Address = 0x20000804;
+    var->OnlyAddress =true;
+    var->SetRefreshTime(100);
+    var->Type = Variable::uint8;
+    var->size = 1;
+    connect(var,SIGNAL(VariableChanged(QByteArray&)),this,SLOT(VariableModified(QByteArray&)));
+    variables.push_back(var);
+
+    RefreshTable();
+    */
 }
 
 MainWindow::~MainWindow()
@@ -228,29 +260,12 @@ void MainWindow::on_actionMapFile_triggered()
 
 void MainWindow::on_actionAdd_new_plot_triggered()
 {
-    QCustomPlot * plot = new QCustomPlot;
+    PlotWidget * plot = new PlotWidget;
     plot->setTitle("newPlot");
     plot->setProperty("xAutoScale",true);
-    plot->setProperty("yAutoScale",false);
-    plot->setProperty("MaxPoints",200);
+    plot->setProperty("yAutoScale",true);
+    plot->SetMaxPoints(200);
     plot->setProperty("xValueTime",true);
-    //plot->setProperty("xValue");
-
-
-    Variable * var;
-    var = new Variable(client,this);
-    variables.push_back(var);
-    var = new Variable(client,this);
-    variables.push_back(var);
-    var = new Variable(client,this);
-    variables.push_back(var);
-    var = new Variable(client,this);
-    variables.push_back(var);
-    RefreshTable();
-
-    plot->addGraph();
-    plot->graph(0)->setPen(QPen(Qt::blue));
-    plot->graph(0)->setProperty("Variable",*var);
 
     PlotConfigurationDialog dlg(*plot,variables,this);
     if (dlg.exec() == QDialog::Accepted)
@@ -260,6 +275,7 @@ void MainWindow::on_actionAdd_new_plot_triggered()
                 SLOT(PlotContextMenuRequest(QPoint)));
         PlotList.push_back(plot);
         GraphSplitter->addWidget(plot);
+        //connect(this,SIGNAL(TimerStart()),plot,SLOT(Start()));
     }
     else
     {
@@ -270,7 +286,7 @@ void MainWindow::on_actionAdd_new_plot_triggered()
 void MainWindow::on_actionEdit_plot_triggered()
 {
     QAction * action = qobject_cast<QAction *>(sender());
-    QCustomPlot * plot =qobject_cast<QCustomPlot*>
+    PlotWidget * plot =qobject_cast<PlotWidget*>
             (action->property("Plot").value<QWidget*>());
 
     Q_ASSERT(plot);
@@ -285,7 +301,7 @@ void MainWindow::on_actionEdit_plot_triggered()
 void MainWindow::on_actionRemove_plot_triggered()
 {
     QAction * action = qobject_cast<QAction *>(sender());
-    QCustomPlot * plot =qobject_cast<QCustomPlot*>
+    PlotWidget * plot =qobject_cast<PlotWidget*>
             (action->property("Plot").value<QWidget*>());
 
     Q_ASSERT(plot);

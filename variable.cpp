@@ -35,6 +35,7 @@ void Variable::NewData(quint32 addres, QByteArray &data)
    // {
         Value = data;
         emit VariableChanged(Value);
+        emit VariableChanged();
    // }
 }
 

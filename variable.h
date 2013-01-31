@@ -32,6 +32,7 @@ public:
 
 signals:
     void VariableChanged(QByteArray & val);
+    void VariableChanged();
     
 public slots:
     void ModifyVariable(QString  val);
@@ -59,7 +60,9 @@ private:
     static int cant;
     friend class VariableDialog;
     friend class MapFileClass;
+    friend class MainWindow;
 };
+
 
 Q_DECLARE_METATYPE(Variable*)
 

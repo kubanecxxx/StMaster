@@ -17,6 +17,7 @@ class HLed;
 class Variable;
 class KelnetClient;
 class MapFileClass;
+class PlotWidget;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -39,7 +40,7 @@ private:
     QString MapFilePath;
     MapFileClass * Map;
 
-    typedef QList<QCustomPlot *> plot_list_t;
+    typedef QList<PlotWidget *> plot_list_t;
 
     plot_list_t PlotList;
     QSplitter * GraphSplitter;

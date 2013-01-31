@@ -10,14 +10,14 @@ namespace Ui {
 class PlotConfigurationDialog;
 }
 
-class QCustomPlot;
+class PlotWidget;
 class PlotConfigurationDialog : public QDialog
 {
     Q_OBJECT
     
 public:
     explicit PlotConfigurationDialog(
-            QCustomPlot & plot,MainWindow::VarList_t & vars,QWidget *parent = 0);
+            PlotWidget & plot,MainWindow::VarList_t & vars,QWidget *parent = 0);
     ~PlotConfigurationDialog();
     
 private slots:
@@ -30,8 +30,9 @@ private slots:
 
 private:
     Ui::PlotConfigurationDialog *ui;
-    QCustomPlot & Plot;
+    PlotWidget & Plot;
 
+    QList<Variable*> DeletedVariables;
 
     QMenu * TableMenu;
     DragDropModel * modelList;

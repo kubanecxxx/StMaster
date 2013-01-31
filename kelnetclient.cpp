@@ -17,8 +17,10 @@ void KelnetClient::run()
     {
         if (!buffer.empty())
         {
+            mutex2.lock();
             socket->write(buffer.first());
             buffer.removeFirst();
+            mutex2.unlock();
         }
         mutex.lock();
     }
@@ -54,7 +56,9 @@ void KelnetClient::WriteSocket(const QByteArray &array)
 {
     bool empty = buffer.empty();
 
+    mutex2.lock();
     buffer.push_back(array);
+    mutex2.unlock();
     if (empty)
         mutex.unlock();
 }

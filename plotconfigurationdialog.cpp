@@ -7,6 +7,7 @@
 #include <QPoint>
 #include <QStandardItemModel>
 #include <QPen>
+#include "plotwidget.h"
 
 #define toVariable()  value<Variable*>()
 
@@ -16,7 +17,7 @@
  * and variable list
  ******************************************************************/
 PlotConfigurationDialog::PlotConfigurationDialog(
-        QCustomPlot & plot,MainWindow::VarList_t & vars,QWidget *parent) :
+        PlotWidget & plot,MainWindow::VarList_t & vars,QWidget *parent) :
     QDialog(parent),
     ui(new Ui::PlotConfigurationDialog),
     Plot(plot)
@@ -43,7 +44,6 @@ PlotConfigurationDialog::PlotConfigurationDialog(
         Variable & var = *vars.at(i);
         QStandardItem * item = new QStandardItem(var.GetName());
         item->setData(var);
-        Q_ASSERT(item->data().toVariable());
         modelList->appendRow(item);
         ui->comboXValue->addItem(var.GetName(),var);
     }
@@ -64,7 +64,7 @@ PlotConfigurationDialog::PlotConfigurationDialog(
     //setup autoscales
     ui->checkXAutoScale->setChecked(Plot.property("xAutoScale").toBool());
     ui->checkYAutoScale->setChecked(Plot.property("yAutoScale").toBool());
-    ui->spinMaxPoints->setValue(Plot.property("MaxPoints").toInt());
+    ui->spinMaxPoints->setValue(Plot.MaxPoints());
 
     /*******************************************************************
      * setup combo with x-value
@@ -132,8 +132,6 @@ void PlotConfigurationDialog::on_buttonBox_accepted()
 {
     /*******************************************************************
      * setup axis limits from spin boxes
-     * @todo (dis)connect signals plot to autoscaling
-     * @todo (dis)connect signals directly from variable
      ******************************************************************/
     bool check;
     Plot.setProperty("xAutoScale",check = ui->checkXAutoScale->isChecked());
@@ -152,17 +150,26 @@ void PlotConfigurationDialog::on_buttonBox_accepted()
      * set graphcount and colors from tableusedvariables
      ******************************************************************/
     Plot.clearGraphs();
+
+    for (int i = 0 ; i < DeletedVariables.count(); i++)
+        disconnect(DeletedVariables.at(i),SIGNAL(VariableChanged()),&Plot,SLOT(VariableNewValue()));
+
     for(int i = 0 ; i < modelTable->rowCount(); i++)
     {
         Plot.addGraph();
 
         Variable * var;
-        var = modelTable->item(i,0)->data().toVariable();
+        Q_ASSERT(modelTable->item(i)->data().isValid());
+        var = modelTable->item(i)->data().toVariable();
         Q_ASSERT(var);
         Plot.graph(i)->setProperty("Variable",*var);
 
         QColor color = modelTable->item(i,1)->data(Qt::BackgroundColorRole).value<QColor>();
         Plot.graph(i)->setPen(QPen(color));
+        Plot.graph(i)->setName(var->GetName());
+
+        connect(var,SIGNAL(VariableChanged()),&Plot,SLOT(VariableNewValue()),Qt::UniqueConnection);
+
     }
     /*******************************************************************
      * setup title, x-value and maximum points
@@ -176,8 +183,9 @@ void PlotConfigurationDialog::on_buttonBox_accepted()
         Plot.setProperty("xValueTime",false);
         Plot.setProperty("xValue",ui->comboXValue->itemData(ui->comboXValue->currentIndex()));
     }
-    Plot.setProperty("MaxPoints",ui->spinMaxPoints->value());
+    Plot.SetMaxPoints(ui->spinMaxPoints->value());
     Plot.setTitle(ui->lineTitle->text());
+    Plot.Start();
 
     accept();
 }
@@ -228,6 +236,11 @@ void PlotConfigurationDialog::DeleteVariable()
     QAction * act = qobject_cast<QAction *>(sender());
     int row = act->property("Row").toInt(&ok);
     Q_ASSERT(ok);
+
+    QStandardItem * item = modelTable->item(row);
+    Variable * var = item->data().toVariable();
+    Q_ASSERT(var);
+    DeletedVariables.push_back(var);
 
     modelTable->removeRow(row);
 }
