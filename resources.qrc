@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>st_logo_big.jpg</file>
+    </qresource>
+</RCC>

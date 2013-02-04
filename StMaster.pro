@@ -10,7 +10,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = StMaster
 TEMPLATE = app
-
+#ICON = :/icons/st_logo_big.jpg
 
 SOURCES += main.cpp\
         mainwindow.cpp \
@@ -45,3 +45,6 @@ FORMS    += mainwindow.ui \
 
 CONFIG += qxt
 QXT += core gui
+
+RESOURCES += \
+    resources.qrc
