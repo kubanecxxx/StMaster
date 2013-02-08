@@ -23,6 +23,8 @@ void KelnetClient::run()
             mutex2.unlock();
         }
         mutex.lock();
+        condwait.wait(&mutex);
+        mutex.unlock();
     }
 }
 
@@ -42,14 +44,15 @@ void KelnetClient::NewData()
         quint32 addr = data.mid(0,id).toInt(NULL,16);
         data.remove(0,id +1 );
 
-        emit MemoryRead(addr,data);
+        if (data.count())
+            emit MemoryRead(addr,data);
     }
     else if (data.startsWith("W"))
     {
 
     }
 
-    mutex.unlock();
+    condwait.wakeAll();
 }
 
 void KelnetClient::WriteSocket(const QByteArray &array)
@@ -60,7 +63,7 @@ void KelnetClient::WriteSocket(const QByteArray &array)
     buffer.push_back(array);
     mutex2.unlock();
     if (empty)
-        mutex.unlock();
+        condwait.wakeAll();
 }
 
 void KelnetClient::Connect()

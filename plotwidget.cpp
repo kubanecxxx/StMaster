@@ -30,7 +30,7 @@ void PlotWidget::VariableNewValue()
 
     if (property("xValueTime").toBool())
     {
-        grap->addData(time.elapsed() ,value);
+        grap->addData(time.elapsed() /1000.0 ,value);
     }
     else
     {
@@ -61,5 +61,6 @@ void PlotWidget::Start()
     }
 
     legend->setVisible(true);
+    legend->setPositionStyle(QCPLegend::psTopLeft);
     time.start();
 }

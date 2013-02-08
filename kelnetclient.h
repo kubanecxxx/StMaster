@@ -5,6 +5,7 @@
 #include <QTcpSocket>
 #include <QThread>
 #include <QMutex>
+#include <QWaitCondition>
 
 class KelnetClient : public QThread
 {
@@ -38,6 +39,7 @@ private:
     void run();
     QMutex mutex;
     QMutex mutex2;
+    QWaitCondition condwait;
 
     
 };
