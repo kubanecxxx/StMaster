@@ -15,10 +15,9 @@ QTableWidgetKrida::QTableWidgetKrida(QWidget *parent) :
     connect(Edit,SIGNAL(triggered()),this,SLOT(SlotEdit()));
     connect(Remove,SIGNAL(triggered()),this,SLOT(SlotRemove()));
 
-    SET_THEME();
-    Add->setIcon(QIcon::fromTheme("document-new"));
-    Remove->setIcon(QIcon::fromTheme("edit-cut"));
-    Edit->setIcon(QIcon::fromTheme("edit-copy"));
+    Add->setIcon(QIcon(":/icons/chart"));
+    Remove->setIcon(QIcon(":/icons/remove"));
+    Edit->setIcon(QIcon(":/icons/edit"));
 }
 
 void QTableWidgetKrida::contextMenuEvent(QContextMenuEvent * event)

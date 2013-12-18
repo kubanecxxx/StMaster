@@ -3,8 +3,6 @@
 
 #include <QMainWindow>
 
-#define SET_THEME() QIcon::setThemeName("mate")
-
 namespace Ui {
 class MainWindow;
 }
@@ -18,6 +16,7 @@ class Variable;
 class KelnetClient;
 class MapFileClass;
 class PlotWidget;
+class QFile;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -29,6 +28,8 @@ public:
     typedef QList<Variable *> VarList_t;
     void RefreshTable();
     
+
+
 private:
     Ui::MainWindow *ui;
     KelnetClient * client;
@@ -47,6 +48,9 @@ private:
 
     void FillRow(int row,const Variable & var);
     QMenu * plotMenu;
+
+    void saveXml(QFile & file);
+    void loadXml(QFile & file);
 
 signals:
     void TimerStart();
@@ -72,6 +76,11 @@ private slots:
     void on_actionAdd_new_plot_triggered();
     void on_actionEdit_plot_triggered();
     void on_actionRemove_plot_triggered();
+    void on_actionSave_triggered();
+    void on_actionOpen_triggered();
+
+public:
+     VarList_t  GetVarList() const {return variables;}
 };
 
 #endif // MAINWINDOW_H

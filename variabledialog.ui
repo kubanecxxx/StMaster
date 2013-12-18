@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="resources.qrc">
-    <normaloff>:/icons/st_logo_big.jpg</normaloff>:/icons/st_logo_big.jpg</iconset>
+    <normaloff>:/icons/logo</normaloff>:/icons/logo</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -31,7 +31,7 @@
        <property name="maximum">
         <number>999999999</number>
        </property>
-       <property name="base">
+       <property name="base" stdset="0">
         <number>16</number>
        </property>
       </widget>

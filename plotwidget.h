@@ -4,7 +4,7 @@
 #include "qcustomplot.h"
 
 
-
+class QDomElement;
 class PlotWidget : public QCustomPlot
 {
     Q_OBJECT
@@ -18,6 +18,8 @@ public:
     //getters
     int MaxPoints() const {return maxPoints;}
 
+    void saveXml(QDomElement * parent) const;
+    void loadXml(QDomElement * plot);
     
 signals:
     

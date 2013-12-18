@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <QVariant>
 
+class QDomElement;
 class KelnetClient;
 class Variable : public QObject
 {
@@ -29,6 +30,9 @@ public:
         return QVariant::fromValue(this);
     }
 
+
+    void saveXml (QDomElement * par) const;
+    void loadXml (QDomElement * par);
 
 signals:
     void VariableChanged(QByteArray & val);

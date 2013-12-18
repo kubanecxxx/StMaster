@@ -1,5 +1,15 @@
 <RCC>
     <qresource prefix="/icons">
-        <file>st_logo_big.jpg</file>
+        <file alias="open">icons/Actions-document-open-folder-icon.png</file>
+        <file alias="new">icons/edit-new-document-icon.png</file>
+        <file alias="saveas">icons/Save-as-icon.png</file>
+        <file alias="save">icons/Save-icon.png</file>
+        <file alias="logo">icons/st_logo_big.jpg</file>
+        <file alias="connect">icons/connect.png</file>
+        <file alias="remove">icons/remove-icon.png</file>
+        <file alias="plot">icons/graph-icon.png</file>
+        <file alias="chart">icons/Actions-office-chart-line-stacked-icon.png</file>
+        <file alias="edit">icons/pencil-icon.png</file>
+        <file alias="map">icons/Map-Marker-Marker-Outside-Azure-icon.png</file>
     </qresource>
 </RCC>

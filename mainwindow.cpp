@@ -14,6 +14,9 @@
 #include "plotconfigurationdialog.h"
 #include <QSplitter>
 #include "plotwidget.h"
+#include <QCoreApplication>
+#include <QDomDocument>
+#include <QDomNode>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -38,17 +41,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(this,SIGNAL(TimerStart()),Timer,SLOT(start()));
     connect(this,SIGNAL(TimerStop()),Timer,SLOT(stop()));
     connect(Timer,SIGNAL(timeout()),this,SLOT(Timeout()));
-
-    SET_THEME();
-    ui->actionNew->setIcon(QIcon::fromTheme("document-new"));
-    ui->actionSave->setIcon(QIcon::fromTheme("document-save"));
-    ui->actionSaveAs->setIcon(QIcon::fromTheme("document-save-as"));
-    ui->actionOpen->setIcon(QIcon::fromTheme("document-open"));
-    ui->actionConnect->setIcon(QIcon::fromTheme("network-wired"));
-    ui->actionMapFile->setIcon(QIcon::fromTheme("preferences-system"));
-    ui->actionAdd_new_plot->setIcon(QIcon::fromTheme("document-new"));
-    ui->actionEdit_plot->setIcon(QIcon::fromTheme("edit-copy"));
-    ui->actionRemove_plot->setIcon(QIcon::fromTheme("edit-delete"));
 
     MapFile = new QLabel(this);
     MapFile->setText("No map file");
@@ -78,36 +70,6 @@ MainWindow::MainWindow(QWidget *parent) :
     plotMenu->addSeparator();
     plotMenu->addAction(ui->actionEdit_plot);
     plotMenu->addAction(ui->actionRemove_plot);
-/*
-    Variable * var = new Variable(client,this);
-    var->Address = 0x20000a08;
-    var->OnlyAddress =true;
-    var->SetRefreshTime(100);
-    var->Type = Variable::uint8;
-    var->size = 1;
-    connect(var,SIGNAL(VariableChanged(QByteArray&)),this,SLOT(VariableModified(QByteArray&)));
-    variables.push_back(var);
-
-    var = new Variable(client,this);
-    var->Address = 0x20000800;
-    var->OnlyAddress =true;
-    var->SetRefreshTime(100);
-    var->Type = Variable::uint8;
-    var->size = 1;
-    connect(var,SIGNAL(VariableChanged(QByteArray&)),this,SLOT(VariableModified(QByteArray&)));
-    variables.push_back(var);
-
-    var = new Variable(client,this);
-    var->Address = 0x20000804;
-    var->OnlyAddress =true;
-    var->SetRefreshTime(100);
-    var->Type = Variable::uint8;
-    var->size = 1;
-    connect(var,SIGNAL(VariableChanged(QByteArray&)),this,SLOT(VariableModified(QByteArray&)));
-    variables.push_back(var);
-
-    RefreshTable();
-    */
 }
 
 MainWindow::~MainWindow()
@@ -178,6 +140,7 @@ void MainWindow::RemoveRow(int row)
 {
     Variable * var = variables.at(row);
     disconnect(var,SIGNAL(VariableChanged(QByteArray&)),this,SLOT(VariableModified(QByteArray&)));
+    var->deleteLater();
     variables.removeAt(row);
     RefreshTable();
 }
@@ -318,4 +281,156 @@ void MainWindow::PlotContextMenuRequest(QPoint)
     ui->actionEdit_plot->setProperty("Plot",QVariant::fromValue((QWidget *)plot));
     ui->actionRemove_plot->setProperty("Plot",QVariant::fromValue((QWidget *)plot));
     plotMenu->popup(QCursor::pos());
+}
+
+void MainWindow::saveXml(QFile &file)
+{
+    QDomDocument doc;
+    QDomElement xml = doc.createElement("xml");
+
+    /***************************************************
+     * save map file
+     ***************************************************/
+    QDomElement map = doc.createElement("mapFile");
+    map.setAttribute("path" , MapFilePath);
+    xml.appendChild(map);
+
+    /***************************************************
+     * save variable list
+     ***************************************************/
+    QDomElement varlist = doc.createElement("variables");
+    xml.appendChild(varlist);
+    foreach (Variable * v, variables)
+    {
+        v->saveXml(&varlist);
+    }
+
+    /******************
+     * save plot list
+     ******************/
+    QDomElement plotlist = doc.createElement("graphs");
+    xml.appendChild(plotlist);
+    foreach (PlotWidget * p, PlotList)
+    {
+        p->saveXml(&plotlist);
+    }
+
+    /******************
+     * save to file
+     ******************/
+    doc.appendChild(xml);
+    QString str = doc.toString();
+    qDebug() << str;
+    if (!file.open(QFile::WriteOnly))
+    {
+        qDebug() << "cannot open xml file";
+        return;
+    }
+    file.write(doc.toString().toUtf8());
+    file.close();
+}
+
+/**
+ * @brief MainWindow::loadXml
+ * load workspace from xml file
+ * @param file
+ */
+void MainWindow::loadXml(QFile &file)
+{
+    /***************************************************
+     * control if file exists
+     ***************************************************/
+    if (!file.open(QFile::ReadOnly))
+    {
+        qDebug() << "xml workspace file cannot be opened";
+        return;
+    }
+
+    /***************************************************
+     * tidy up in variable list and plot list
+     ***************************************************/
+    foreach (Variable * v, variables) {
+        v->deleteLater();
+    }
+    variables.clear();
+
+    foreach(PlotWidget * p, PlotList )
+    {
+        p->deleteLater();
+    }
+    PlotList.clear();
+
+    /***************************************************
+     * start
+     ***************************************************/
+    QDomDocument doc;
+    QString str = QString::fromUtf8(file.readAll());
+    file.close();
+    doc.setContent(str);
+
+    QDomElement element = doc.documentElement();
+
+    /***************************************************
+     * load map file
+     ***************************************************/
+    QDomElement map = element.firstChildElement("mapFile");
+    MapFilePath = map.attribute("path").toUtf8();
+    Map->SetFile(MapFilePath);
+
+    /***************************************************
+     * load variable list
+     ***************************************************/
+    QDomElement variables = element.firstChildElement("variables");
+    QDomElement var = variables.firstChildElement("variable");
+    while (var.isElement())
+    {
+        //do something
+        Variable * v = new Variable(client,this);
+        v->loadXml(&var);
+
+        this->variables.push_back(v);
+        connect(v,SIGNAL(VariableChanged(QByteArray&)),this,SLOT(VariableModified(QByteArray&)));
+
+        //next
+        var = var.nextSiblingElement("variable");
+    }
+
+    /***************************************************
+     * load plot list
+     ***************************************************/
+    QDomElement graphs = element.firstChildElement("graphs");
+    QDomElement plot = graphs.firstChildElement("plot");
+    while (plot.isElement())
+    {
+        PlotWidget * pl = new PlotWidget(this);
+        pl->loadXml(&plot);
+        pl->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(pl,SIGNAL(customContextMenuRequested(QPoint)),this,
+                SLOT(PlotContextMenuRequest(QPoint)));
+        PlotList.push_back(pl);
+        GraphSplitter->addWidget(pl);
+
+
+
+        //next
+        plot = plot.nextSiblingElement("variable");
+    }
+
+    /***************************************************
+     * refresh everything to GUI
+     ***************************************************/
+    RefreshTable();
+    MapFile->setText(MapFilePath);
+}
+
+void MainWindow::on_actionSave_triggered()
+{
+    QFile f("trouba.xml");
+    saveXml(f);
+}
+
+void MainWindow::on_actionOpen_triggered()
+{
+    QFile f("trouba.xml");
+    loadXml(f);
 }

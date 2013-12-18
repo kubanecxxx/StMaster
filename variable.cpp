@@ -2,6 +2,9 @@
 #include <QtEndian>
 #include "kelnetclient.h"
 #include <QTimer>
+#include <QDomDocument>
+#include <QDomNode>
+
 
 int Variable::cant = 0;
 
@@ -185,3 +188,33 @@ void Variable::resize()
 }
 
 int Variable::RefreshTime() const {return timer->interval();}
+
+void Variable::saveXml(QDomElement * parent) const
+{
+    QDomDocument doc = parent->ownerDocument();
+    QDomElement el = doc.createElement("variable");
+
+    el.setAttribute("name",Name);
+    el.setAttribute("address",Address);
+    el.setAttribute("base",base);
+    el.setAttribute("type",Type);
+    el.setAttribute("onlyAddress",OnlyAddress);
+    el.setAttribute("period",RefreshTime());
+
+    parent->appendChild(el);
+}
+
+void Variable::loadXml(QDomElement *parent)
+{
+    QDomElement var = *parent;
+
+    Name = var.attribute("name");
+    Address = var.attribute("address").toUInt();
+    base = var.attribute("base").toInt();
+    Type = static_cast<type_t>(var.attribute("type").toInt());
+    OnlyAddress = var.attribute("onlyAddress").toInt();
+    timer->setInterval(var.attribute("period").toInt());
+
+    TypeString = QString("%1").arg(Type);
+    resize();
+}

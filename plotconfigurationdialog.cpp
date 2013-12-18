@@ -23,7 +23,6 @@ PlotConfigurationDialog::PlotConfigurationDialog(
     Plot(plot)
 {
     ui->setupUi(this);
-    SET_THEME();
     /*******************************************************************
      * setup models
      ******************************************************************/

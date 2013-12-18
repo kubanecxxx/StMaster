@@ -4,13 +4,12 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network
+QT       += core gui network xml
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = StMaster
 TEMPLATE = app
-#ICON = :/icons/st_logo_big.jpg
 
 SOURCES += main.cpp\
         mainwindow.cpp \
