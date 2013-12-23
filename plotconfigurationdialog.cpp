@@ -151,7 +151,7 @@ void PlotConfigurationDialog::on_buttonBox_accepted()
     Plot.clearGraphs();
 
     for (int i = 0 ; i < DeletedVariables.count(); i++)
-        disconnect(DeletedVariables.at(i),SIGNAL(VariableChanged()),&Plot,SLOT(VariableNewValue()));
+        DeletedVariables.at(i)->disconnectNewSample(&Plot,SLOT(VariableNewValue()));
 
     for(int i = 0 ; i < modelTable->rowCount(); i++)
     {
@@ -167,8 +167,7 @@ void PlotConfigurationDialog::on_buttonBox_accepted()
         Plot.graph(i)->setPen(QPen(color));
         Plot.graph(i)->setName(var->GetName());
 
-        connect(var,SIGNAL(VariableChanged()),&Plot,SLOT(VariableNewValue()),Qt::UniqueConnection);
-
+        var->connectNewSample(&Plot,SLOT(VariableNewValue()));
     }
     /*******************************************************************
      * setup title, x-value and maximum points

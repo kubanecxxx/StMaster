@@ -12,12 +12,7 @@ VariableDialog::VariableDialog(Variable * var, MapFileClass * map ,QWidget *pare
 {
     ui->setupUi(this);
 
-    QStringList types;
-    types << "uint8" << "uint16" << "uint32" << "uint64";
-    types << "int8" << "int16" << "int32" << "int64";
-    types << "float" << "double";
-
-    ui->comboType->addItems(types);
+    ui->comboType->addItems(Variable::GetTypes());
     ui->checkAddress->setChecked(Var->OnlyAddress);
     ui->comboType->setCurrentIndex(Var->Type);
     ui->spinPeriod->setValue(Var->RefreshTime());
@@ -25,17 +20,23 @@ VariableDialog::VariableDialog(Variable * var, MapFileClass * map ,QWidget *pare
     ui->spinAddress->setValue(Var->Address);
     ui->spinBase->setValue(Var->base);
     //ui->comboVar->setEditable(Var.OnlyAddress);
+    ui->spinOffset->setValue(var->offset);
+    ui->spinK->setValue(var->interpolation.k);
+    ui->spinQ->setValue(var->interpolation.q);
+    ui->groupInterpolation->setChecked(var->interpolation.use);
 
     ui->comboVar->addItems(map->GetVars());
 
     connect(ui->checkAddress,SIGNAL(clicked(bool)),this,SLOT(Checkbox(bool)));
-    connect(ui->comboType,SIGNAL(activated(int)),this,SLOT(ComboType(int)));
-    connect(ui->comboVar,SIGNAL(editTextChanged(QString)),this,SLOT(ComboName(QString)));
-    connect(ui->spinAddress,SIGNAL(valueChanged(int)),this,SLOT(SpinAddress(int)));
-    connect(ui->spinPeriod,SIGNAL(valueChanged(int)),this,SLOT(SpinPeriod(int)));
-    connect(ui->spinBase,SIGNAL(valueChanged(int)),this,SLOT(SpinBase(int)));
+    connect(ui->comboVar,SIGNAL(activated(QString)),this,SLOT(ComboName(QString)));
+    connect(ui->spinAddress,SIGNAL(valueChanged(int)),this,SLOT(AddrChanged(int)));
 
     ui->comboVar->setEditText(Var->Name);
+
+    ui->buttonBox->button(QDialogButtonBox::Ok)->setDefault(false);
+    ui->buttonBox->button(QDialogButtonBox::Ok)->setAutoDefault(false);
+
+    ComboName(ui->comboVar->currentText());
 }
 
 VariableDialog::~VariableDialog()
@@ -43,59 +44,39 @@ VariableDialog::~VariableDialog()
     delete ui;
 }
 
-void VariableDialog::SpinBase(int base)
-{
-    Var->base = base;
-}
-
 void VariableDialog::ComboName(QString text)
 {
-    QPushButton * but = ui->buttonBox->button(QDialogButtonBox::Ok);
-    if (!Var->OnlyAddress)
+    if (!ui->checkAddress->isChecked())
     {
-        int find = ui->comboVar->findText(text);
-
-        if (find == -1)
+        int i = Map->GetAddress(text);
+        if (i)
         {
-            but->setDisabled(true);
-        }
-        else
-        {
-            ui->spinAddress->setValue(Map->GetAddress(text));
-            Var->Name = text;
-            but->setEnabled(true);
+            ui->spinAddress->setValue(i);
+            ui->spinAddress->setSuffix(QString(" - (%1)").arg(text));
         }
     }
-    else
-    {
-        but->setEnabled(true);
-        Var->Name = text;
-    }
-}
-
-void VariableDialog::ComboType(int index)
-{
-    Var->Type = static_cast<Variable::type_t>(index);
-    Var->TypeString = ui->comboType->currentText();
-    Var->resize();
-}
-
-void VariableDialog::SpinAddress(int addr)
-{
-    Var->Address = addr;
-}
-
-void VariableDialog::SpinPeriod(int ms)
-{
-    Var->timer->setInterval(ms);
 }
 
 void VariableDialog::Checkbox(bool checked)
 {
-    QPushButton * but = ui->buttonBox->button(QDialogButtonBox::Ok);
-    if (checked)
-        but->setEnabled(checked);
-    Var->OnlyAddress = checked;
     ui->spinAddress->setReadOnly(!checked);
-    //ui->comboVar->setEditable(checked);
+    if (!checked)
+        ui->spinAddress->setValue(Map->GetAddress(ui->comboVar->currentText()));
+}
+
+void VariableDialog::on_buttonBox_accepted()
+{
+    Var->timer->setInterval(ui->spinPeriod->value());
+    Var->Address = ui->spinAddress->value();
+    Var->base = ui->spinBase->value();
+    Var->OnlyAddress = ui->checkAddress->isChecked();
+    Var->Type = static_cast<Variable::type_t>(ui->comboType->currentIndex());
+    Var->TypeString = ui->comboType->currentText();
+    Var->Name = ui->comboVar->currentText();
+    Var->interpolation.use = ui->groupInterpolation->isChecked();
+    Var->interpolation.k = ui->spinK->value();
+    Var->interpolation.q = ui->spinQ->value();
+    Var->offset = ui->spinOffset->value();
+    Var->resize();
+
 }

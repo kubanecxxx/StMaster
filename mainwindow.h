@@ -59,7 +59,7 @@ signals:
 private slots:
     void Connected(void);
     void NewCoreStatus(QString & coreStatus);
-    void VariableModified(QByteArray & data);
+    void VariableModified();
     void Disconnected(void);
     void Timeout(void);
 

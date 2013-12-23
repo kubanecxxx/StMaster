@@ -17,7 +17,7 @@ public:
     typedef QMap<QString,quint32> vars_t;
 
     QStringList GetVars() {return Vars.keys();}
-    quint32 GetAddress (QString & var) {return Vars.value(var);}
+    quint32 GetAddress (const QString & var) {return Vars.value(var);}
     void SetFile(QString & file);
     
 signals:

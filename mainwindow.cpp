@@ -97,7 +97,7 @@ void MainWindow::FillRow(int row, const Variable &var)
     item = new QTableWidgetItem(var.GetName());
     item->setFlags(Qt::ItemIsEnabled);
     ui->Table->setItem(row,0, item);
-    item = new QTableWidgetItem(QString("0x%1").arg(var.GetAddress(),0,16));
+    item = new QTableWidgetItem(QString("0x%1").arg(var.GetAddressOffset(),0,16));
     item->setFlags(Qt::ItemIsEnabled);
     ui->Table->setItem(row,2,item);
     item = new QTableWidgetItem(var.GetType());
@@ -124,7 +124,7 @@ void MainWindow::AddNewRow()
     if (dlg.exec() == QDialog::Accepted)
     {
         variables.push_back(var);
-        connect(var,SIGNAL(VariableChanged(QByteArray&)),this,SLOT(VariableModified(QByteArray&)));
+        var->connectNewSample(this,SLOT(VariableModified()));
         RefreshTable();
 
         if (ui->actionConnect->isChecked())
@@ -139,7 +139,6 @@ void MainWindow::AddNewRow()
 void MainWindow::RemoveRow(int row)
 {
     Variable * var = variables.at(row);
-    disconnect(var,SIGNAL(VariableChanged(QByteArray&)),this,SLOT(VariableModified(QByteArray&)));
     var->deleteLater();
     variables.removeAt(row);
     RefreshTable();
@@ -194,7 +193,7 @@ void MainWindow::NewCoreStatus(QString &coreStatus)
     CoreStatus->setText(coreStatus);
 }
 
-void MainWindow::VariableModified(QByteArray &)
+void MainWindow::VariableModified()
 {
     Variable * var = qobject_cast<Variable *> (sender());
     int i = variables.indexOf(var);
@@ -389,7 +388,7 @@ void MainWindow::loadXml(QFile &file)
         v->loadXml(&var);
 
         this->variables.push_back(v);
-        connect(v,SIGNAL(VariableChanged(QByteArray&)),this,SLOT(VariableModified(QByteArray&)));
+        v->connectNewSample(this,SLOT(VariableModified()));
 
         //next
         var = var.nextSiblingElement("variable");

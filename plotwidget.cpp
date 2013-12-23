@@ -100,8 +100,7 @@ void PlotWidget::loadXml(QDomElement *plot)
 
         p = p.nextSiblingElement("var");
 
-
-        connect(ve,SIGNAL(VariableChanged()),this,SLOT(VariableNewValue()),Qt::UniqueConnection);
+        ve->connectNewSample(this,SLOT(VariableNewValue()));
     }
 
     Start();

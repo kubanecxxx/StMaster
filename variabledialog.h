@@ -26,12 +26,9 @@ private:
 
 private slots:
     void Checkbox(bool checked);
-    void ComboType(int index);
     void ComboName(QString text);
-    void SpinAddress(int addr);
-    void SpinPeriod(int ms);
-    void SpinBase(int base);
 
+    void on_buttonBox_accepted();
 };
 
 #endif // VARIABLEDIALOG_H

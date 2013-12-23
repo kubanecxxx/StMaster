@@ -4,9 +4,12 @@
 #include <QTimer>
 #include <QDomDocument>
 #include <QDomNode>
-
+#include <QStringList>
 
 int Variable::cant = 0;
+
+QStringList Variable::types;
+QVector<uint> Variable::typeLengths;
 
 Variable::Variable(KelnetClient * kelnet, QObject *parent) :
     QObject(parent),
@@ -14,13 +17,17 @@ Variable::Variable(KelnetClient * kelnet, QObject *parent) :
     Name(QString("Variable %1").arg(cant++)),
     TypeString("uint32"),
     Address(0x20000000),
-    Value(0),
     Type(uint32),
     timer(new QTimer),
+    offset(4),
     size (4),
     OnlyAddress(false),
     base(10)
 {
+    interpolation.k = 1;
+    interpolation.q = 0;
+    prepareTypes();
+
     connect(timer,SIGNAL(timeout()),this,SLOT(Timeout()));
     connect(&client,SIGNAL(MemoryRead(quint32,QByteArray&)),this,SLOT(NewData(quint32,QByteArray&)));
     connect(parent,SIGNAL(TimerStart()),timer,SLOT(start()));
@@ -29,17 +36,34 @@ Variable::Variable(KelnetClient * kelnet, QObject *parent) :
     timer->setInterval(1000);
 }
 
+const QStringList & Variable::GetTypes()
+{
+    prepareTypes();
+    return types;
+}
+
+void Variable::prepareTypes()
+{
+    if (types.count() == 0)
+    {
+        types << "uint8" << "uint16" << "uint32" << "uint64";
+        types << "int8" << "int16" << "int32" << "int64";
+        types << "float" << "double";
+
+        typeLengths << 1 << 2 << 4 << 8 << 1 << 2 << 4 << 8 << 4 << 8;
+    }
+}
+
 void Variable::NewData(quint32 addres, QByteArray &data)
 {
-    if (addres != Address)
+    if (addres != GetAddressOffset())
         return;
 
-   // if (data != Value)
-   // {
-        Value = data;
-        emit VariableChanged(Value);
-        emit VariableChanged();
-   // }
+    Q_ASSERT(data.count() == size);
+
+    memset(this->data.c,0,sizeof(type_union));
+    memcpy(this->data.c,data.constData(),size);
+    emit NewSample(this->data);
 }
 
 void Variable::ModifyVariable(QString val)
@@ -75,13 +99,13 @@ void Variable::ModifyVariable(QString val)
     }
 
     if (client.IsConnected())
-        client.WriteData(Address,ar);
+        client.WriteData(GetAddressOffset(),ar);
 }
 
 void Variable::Timeout()
 {
    if (client.IsConnected())
-        client.GetData(Address,size);
+        client.GetData(GetAddressOffset(),size);
 }
 
 void Variable::SetRefreshTime(int ms)
@@ -89,102 +113,80 @@ void Variable::SetRefreshTime(int ms)
     timer->setInterval(ms);
 }
 
+#define str(x) QString("%1").arg(x,zeros,base,QChar('0'));
+
 QString Variable::GetData()
 {
-    quint8 u8;
-    qint8  i8;
-    quint16 u16;
-    qint16 i16;
-    quint32 u32;
-    qint32 i32;
-    quint64 u64;
-    qint64 i64;
-    float fl;
-
+    double fl;
     QString temp;
+    int zeros = 0;
+
+    if (base == 16)
+        zeros = size * 2;
+    if (base == 2)
+        zeros = size * 8;
 
     switch(Type)
     {
     case uint8:
-        u8 = Value[0];
-        vall = u8;
-        temp = QString::number(u8,base);
+        fl = data.u8;
+        temp = str(data.u8);
         break;
     case int8:
-        i8 = Value[0];
-        temp = QString::number(i8,base);
-        if (base == 2)
-            temp = temp.mid(temp.length()-8);
-        else if (base == 16)
-            temp = temp.mid(temp.length()-2);
-        vall = i8;
+        fl = data.i8;
+        temp = str(data.i8);
         break;
     case uint16:
-        u16 = qFromLittleEndian<quint16>((uchar *)Value.constData());
-        temp = QString::number(u16,base);
-        vall = u16;
+        fl = data.u16;
+        temp = str(data.u16);
         break;
     case int16:
-        i16 = qFromLittleEndian<qint16>((uchar *)Value.constData());
-        temp = QString::number(i16,base);
-        if (base == 2)
-            temp = temp.mid(temp.length()-16);
-        else if (base == 16)
-            temp = temp.mid(temp.length()-4);
-        vall = i16;
+        fl = data.i16;
+        temp = str(data.i16);
         break;
     case uint32:
-        u32 = qFromLittleEndian<quint32>((uchar *)Value.constData());
-        temp = QString::number(u32,base);
-        vall = u32;
+        fl = data.u32;
+        temp = str(data.u32);
         break;
     case int32:
-        i32 = qFromLittleEndian<qint32>((uchar *)Value.constData());
-        temp = QString::number(i32,base);
-        vall = i32;
+        fl = data.i32;
+        temp = str(data.i32);
         break;
     case uint64:
-        u64 = qFromLittleEndian<quint64>((uchar *)Value.constData());
-        temp = QString::number(u64,base);
-        vall = u64;
+        fl = data.u64;
+        temp = str(data.u64);
         break;
     case int64:
-        i64 = qFromLittleEndian<qint64>((uchar *)Value.constData());
-        temp = QString::number(i64,base);
-        vall = i64;
+        fl = data.i64;
+        temp = str(data.i64);
         break;
     case float_t:
-        fl = qFromLittleEndian<quint32>((uchar *)Value.constData());
-        temp = QString::number(fl);
-        vall = fl;
+        fl = data.f;
+        temp = QString("%1").arg(data.f);
         break;
     case double_t:
-        vall = qFromLittleEndian<quint64>((uchar *)Value.constData());
-        temp = QString::number(vall);
+       fl = data.d;
+       temp = QString("%1").arg(data.d);
+       break;
     }
+
+    vall = fl;
+    if (interpolation.use)
+        vall = interpolation.k * fl + interpolation.q;
 
     if (base == 16)
         temp.prepend("0x");
     else if(base == 2)
         temp.prepend("0b");
-    else if (base == 10)
-        temp;
-    else
-        temp.prepend("%1: ").arg(base);
+    else if (base != 10)
+        temp.prepend(QString("%1: ").arg(base));
 
     return temp;
 }
 
 void Variable::resize()
 {
-    if (Type == uint8 || Type == int8)
-        size = 1;
-    else if (Type == uint16 || Type == int16)
-        size = 2;
-    else if (Type == uint32 || Type == int32 || Type == float_t)
-        size = 4;
-    else if (Type == uint64 || Type == int64 || Type == double_t)
-        size = 8;
+   size = typeLengths.at(Type);
 }
 
 int Variable::RefreshTime() const {return timer->interval();}
@@ -200,6 +202,10 @@ void Variable::saveXml(QDomElement * parent) const
     el.setAttribute("type",Type);
     el.setAttribute("onlyAddress",OnlyAddress);
     el.setAttribute("period",RefreshTime());
+    el.setAttribute("offset",offset);
+    el.setAttribute("inter_k",interpolation.k);
+    el.setAttribute("inter_q",interpolation.q);
+    el.setAttribute("use_interpolation",interpolation.use);
 
     parent->appendChild(el);
 }
@@ -214,7 +220,11 @@ void Variable::loadXml(QDomElement *parent)
     Type = static_cast<type_t>(var.attribute("type").toInt());
     OnlyAddress = var.attribute("onlyAddress").toInt();
     timer->setInterval(var.attribute("period").toInt());
+    interpolation.k = var.attribute("inter_k").toDouble();
+    interpolation.q = var.attribute("inter_q").toDouble();
+    offset = var.attribute("offset").toUInt();
+    interpolation.use = var.attribute("use_interpolation").toInt();
 
-    TypeString = QString("%1").arg(Type);
+    TypeString = types.at(Type);
     resize();
 }
