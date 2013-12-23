@@ -11,8 +11,11 @@ VariableDialog::VariableDialog(Variable * var, MapFileClass * map ,QWidget *pare
     Map(map)
 {
     Q_ASSERT(parent);
+    Q_ASSERT(var);
+    Q_ASSERT(map);
     ui->setupUi(this);
     oldName = var->Name;
+    oldAddress = var->GetAddressOffset();
 
     ui->comboType->addItems(Variable::GetTypes());
     ui->checkAddress->setChecked(Var->OnlyAddress);
@@ -73,7 +76,7 @@ void VariableDialog::ComboNameEdited(QString text)
     QString name = w->GetVarList().key(moje,QString());
 
     bool bname = v && oldName != text;
-    bool baddress =(moje && name != text);
+    bool baddress =(moje && name != text && oldAddress != addr);
 
     setWidget(ui->comboVar,bname);
     setWidget(ui->spinAddress,baddress);

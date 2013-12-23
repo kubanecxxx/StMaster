@@ -24,6 +24,7 @@ private:
     Variable * Var;
     MapFileClass * Map;
     QString oldName;
+    quint32 oldAddress;
     void setWidget(QWidget * w, bool bad);
 
 private slots:

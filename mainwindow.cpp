@@ -252,8 +252,16 @@ void MainWindow::RemoveRow(int row)
 void MainWindow::EditRow(int row)
 {
     QString name = ui->Table->item(row,NAME)->text();
-    VariableDialog dlg(variables.value(name),Map,this);
+    Variable * var = variables.value(name);
+    VariableDialog dlg(var,Map,this);
     dlg.exec();
+
+    if (name != var->GetName())
+    {
+        variables.remove(name);
+        variables.insert(var->GetName(),var);
+    }
+
     RefreshTable();
 }
 
@@ -499,7 +507,7 @@ void MainWindow::loadXml(QFile &file)
 
 
         //next
-        plot = plot.nextSiblingElement("variable");
+        plot = plot.nextSiblingElement("plot");
     }
 
     /***************************************************
