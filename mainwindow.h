@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QMap>
 
 namespace Ui {
 class MainWindow;
@@ -25,7 +26,7 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    typedef QList<Variable *> VarList_t;
+    typedef QMap<QString,Variable *> VarList_t;
     void RefreshTable();
     
 
@@ -41,6 +42,7 @@ private:
     QString MapFilePath;
     MapFileClass * Map;
 
+    typedef enum {NAME ,TYPE,ADDRESS, PERIOD, VALUE,FLOAT, MODIFY} columns_t;
     typedef QList<PlotWidget *> plot_list_t;
 
     plot_list_t PlotList;

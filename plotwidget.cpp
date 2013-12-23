@@ -7,8 +7,18 @@
 PlotWidget::PlotWidget(QWidget *parent) :
     QCustomPlot(parent)
 {
+    Q_ASSERT(parent);
     legend->setVisible(true);
     legend->setPositionStyle(QCPLegend::psTopLeft);
+
+    setContextMenuPolicy(Qt::CustomContextMenu);
+
+    setTitle("newPlot");
+    SetMaxPoints(200);
+    xAutoScale = true;
+    yAutoScale = true;
+    xvalue = RELATIVE_TIME;
+    customXValue = NULL;
 }
 
 void PlotWidget::saveXml(QDomElement *parent) const
@@ -17,16 +27,16 @@ void PlotWidget::saveXml(QDomElement *parent) const
     QDomElement el = doc.createElement("plot");
 
     el.setAttribute("name",title());
-    el.setAttribute("xauto",property("xAutoScale").toBool());
+    el.setAttribute("xauto",xAutoScale);
     el.setAttribute("xmin",xAxis->range().lower);
     el.setAttribute("xmax",xAxis->range().upper);
-    el.setAttribute("yauto",property("yAutoScale").toBool());
+    el.setAttribute("yauto",yAutoScale);
     el.setAttribute("ymin",yAxis->range().lower);
     el.setAttribute("ymax",yAxis->range().upper);
-    el.setAttribute("xtime",property("xValueTime").toBool());
+    el.setAttribute("xtime",xvalue);
     el.setAttribute("maxdata",maxPoints);
 
-    Variable * var = property("xValue").value<Variable*>();
+    Variable * var = customXValue;
     if (var)
         el.setAttribute("xvariable",var->GetName());
 
@@ -50,14 +60,14 @@ void PlotWidget::loadXml(QDomElement *plot)
     QDomElement pl = *plot;
 
     setTitle(pl.attribute("name"));
-    setProperty("xAutoScale",pl.attribute("xauto").toInt());
+    xAutoScale = pl.attribute("xauto").toInt();
     xAxis->setRangeLower(pl.attribute("xmin").toDouble());
     xAxis->setRangeUpper(pl.attribute("xmax").toDouble());
-    setProperty("yAutoScale",pl.attribute("yauto").toInt());
+    yAutoScale = pl.attribute("yauto").toInt();
     yAxis->setRangeLower(pl.attribute("ymin").toDouble());
     yAxis->setRangeUpper(pl.attribute("ymax").toDouble());
     maxPoints = pl.attribute("maxdata").toInt();
-    setProperty("xValueTime",pl.attribute("xtime").toInt());
+    xvalue = static_cast<xvalue_t>(pl.attribute("xtime").toInt());
 
     Q_ASSERT(parent());
 
@@ -67,13 +77,14 @@ void PlotWidget::loadXml(QDomElement *plot)
     QString v = pl.attribute("xvariable");
     if(v.count())
     {
-        foreach (Variable * va, w->GetVarList())
+        Variable * var = w->GetVarList().value(v,NULL);
+        if (var)
         {
-            if(va->GetName() == v)
-            {
-                setProperty("xValue",QVariant::fromValue(va));
-                break;
-            }
+            customXValue = var;
+        }
+        else
+        {
+            qDebug() << "variable \"" + v + "\" doesn't exist";
         }
     }
 
@@ -81,18 +92,17 @@ void PlotWidget::loadXml(QDomElement *plot)
     while(p.isElement())
     {
         QString n = p.attribute("name");
-        Variable * ve;
-        asm("nop");
-        foreach (Variable * va, w->GetVarList())
+        Variable * ve = w->GetVarList().value(n,NULL);
+
+        if (!ve)
         {
-            if(va->GetName() == n)
-            {
-                ve = va;
-                break;
-            }
+            qDebug() << "variable \"" + n + "\" doesn't exist";
+            p = p.nextSiblingElement("var");
+            continue;
         }
+
         QCPGraph * g = addGraph();
-        g->setProperty("Variable",QVariant::fromValue(ve));
+        g->setProperty("Variable",*ve);
         g->setName(ve->GetName());
         uint b = p.attribute("color").toUInt();
         QColor c = QColor::fromRgba(b);
@@ -126,21 +136,31 @@ void PlotWidget::VariableNewValue()
     if (grap->data()->count() == maxPoints)
         grap->removeData(grap->data()->keys()[0]);
 
-    if (property("xValueTime").toBool())
+    double ii = QDateTime::currentDateTime().toTime_t();
+    double jj = QTime::currentTime().msec() / 1000.0;
+
+    xAxis->setTickLabelType(QCPAxis::ltNumber);
+    switch(xvalue)
     {
+    case RELATIVE_TIME:
         grap->addData(time.elapsed() /1000.0 ,value);
-    }
-    else
-    {
+        break;
+    case REAL_TIME:
+        grap->addData(ii +  jj ,value);
+        xAxis->setTickLabelType(QCPAxis::ltDateTime);
+        xAxis->setDateTimeFormat("hh:mm:ss");
+        break;
+    case CUSTOM:
         //get x from second variable and add data
-        Variable * xvar = property("xValue").value<Variable*>();
+        Variable * xvar = customXValue;
         grap->addData(xvar->GetDouble(),value);
+        break;
     }
 
-    if (property("xAutoScale").toBool())
+    if (xAutoScale)
         grap->rescaleKeyAxis();
 
-    if (property("yAutoScale").toBool())
+    if (yAutoScale)
         rescaleAxes();
 
     replot();
@@ -148,14 +168,21 @@ void PlotWidget::VariableNewValue()
 
 void PlotWidget::Start()
 {
-    if (property("xValueTime").toBool())
-        xAxis->setLabel("Time [s]");
-    else
+    switch(xvalue)
     {
-        Variable * var = property("xValue").value<Variable*>();
+    case RELATIVE_TIME:
+        xAxis->setLabel("Time [s]");
+        break;
+    case REAL_TIME:
+        xAxis->setLabel("Time");
+        break;
+    case CUSTOM:
+        Variable * var = customXValue;
         Q_ASSERT(var);
 
         xAxis->setLabel(var->GetName()+ "[-]");
+        break;
     }
+
     time.start();
 }

@@ -11,5 +11,6 @@
         <file alias="chart">icons/Actions-office-chart-line-stacked-icon.png</file>
         <file alias="edit">icons/pencil-icon.png</file>
         <file alias="map">icons/Map-Marker-Marker-Outside-Azure-icon.png</file>
+        <file alias="refresh">icons/Refresh-icon.png</file>
     </qresource>
 </RCC>

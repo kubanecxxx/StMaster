@@ -23,9 +23,7 @@ public:
 signals:
     
 public slots:
-
-private slots:
-    void FileChanged(QString name);
+    void FileChanged();
 
 private:
     vars_t Vars;

@@ -10,7 +10,9 @@ VariableDialog::VariableDialog(Variable * var, MapFileClass * map ,QWidget *pare
     Var(var),
     Map(map)
 {
+    Q_ASSERT(parent);
     ui->setupUi(this);
+    oldName = var->Name;
 
     ui->comboType->addItems(Variable::GetTypes());
     ui->checkAddress->setChecked(Var->OnlyAddress);
@@ -29,7 +31,9 @@ VariableDialog::VariableDialog(Variable * var, MapFileClass * map ,QWidget *pare
 
     connect(ui->checkAddress,SIGNAL(clicked(bool)),this,SLOT(Checkbox(bool)));
     connect(ui->comboVar,SIGNAL(activated(QString)),this,SLOT(ComboName(QString)));
-    connect(ui->spinAddress,SIGNAL(valueChanged(int)),this,SLOT(AddrChanged(int)));
+    connect(ui->comboVar,SIGNAL(editTextChanged(QString)), this,SLOT(ComboNameEdited(QString)));
+    connect(ui->spinAddress,SIGNAL(valueChanged(int)),this,SLOT(spinbox()));
+    connect(ui->spinOffset,SIGNAL(valueChanged(int)),this,SLOT(spinbox()));
 
     ui->comboVar->setEditText(Var->Name);
 
@@ -42,6 +46,49 @@ VariableDialog::VariableDialog(Variable * var, MapFileClass * map ,QWidget *pare
 VariableDialog::~VariableDialog()
 {
     delete ui;
+}
+
+void VariableDialog::spinbox()
+{
+    ComboNameEdited(ui->comboVar->currentText());
+}
+
+void VariableDialog::ComboNameEdited(QString text)
+{
+    QPushButton * but = ui->buttonBox->button(QDialogButtonBox::Ok);
+    MainWindow * w = qobject_cast<MainWindow*>(parentWidget());
+    Variable * v = w->GetVarList().value(text);
+    bool enable;
+    quint32 addr = ui->spinAddress->value() + ui->spinOffset->value();
+    Variable * moje = NULL;
+
+    foreach (Variable * var, w->GetVarList().values())
+    {
+        if (var->GetAddressOffset() == addr)
+        {
+            moje = var;
+            break;
+        }
+    }
+    QString name = w->GetVarList().key(moje,QString());
+
+    bool bname = v && oldName != text;
+    bool baddress =(moje && name != text);
+
+    setWidget(ui->comboVar,bname);
+    setWidget(ui->spinAddress,baddress);
+    setWidget(ui->spinOffset,baddress);
+
+    enable = !bname * !baddress;
+    but->setEnabled(enable);
+}
+
+void VariableDialog::setWidget(QWidget *w, bool bad)
+{
+    QFont f = font();
+    f.setItalic(bad);
+    f.setBold(bad);
+    w->setFont(f);
 }
 
 void VariableDialog::ComboName(QString text)

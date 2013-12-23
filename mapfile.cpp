@@ -1,6 +1,7 @@
 #include "mapfile.h"
 #include "mainwindow.h"
 #include "variable.h"
+#include <QDebug>
 
 MapFileClass::MapFileClass(QString & file, MainWindow::VarList_t & vars , QObject *parent) :
     QObject(parent),
@@ -8,7 +9,7 @@ MapFileClass::MapFileClass(QString & file, MainWindow::VarList_t & vars , QObjec
     variables(vars)
 {
     SetFile(file);
-    connect(&watcher,SIGNAL(fileChanged(QString)),this,SLOT(FileChanged(QString)));
+    //connect(&watcher,SIGNAL(fileChanged(QString)),this,SLOT(FileChanged(QString)));
 }
 
 void MapFileClass::SetFile(QString &fil)
@@ -19,17 +20,35 @@ void MapFileClass::SetFile(QString &fil)
     watcher.addPath(fil);
 }
 
-void MapFileClass::FileChanged(QString )
+void MapFileClass::FileChanged()
 {
+    //key from variablesmap , value from map file
+    QMap<QString,QString> temp;
+    QMapIterator<QString,Variable *>it (variables);
+
+    //save old address list
+    while(it.hasNext())
+    {
+        it.next();
+        if (!it.value()->OnlyAddress)
+            temp.insert(it.key(),Vars.key(it.value()->GetAddress()));
+    }
+
     parseMapFile();
 
-    for (int i = 0 ; i < variables.count(); i++)
+    //refresh old adresses by new
+    QMapIterator<QString,QString>ite (temp);
+    while(ite.hasNext())
     {
-        QString name = variables.at(i)->GetName();
-        variables.at(i)->Address = GetAddress(name);
+        ite.next();
+        quint32 newaddr = Vars.value(ite.value());
+        variables.value(ite.key())->Address = newaddr;
     }
 
     qobject_cast<MainWindow *>(parent())->RefreshTable();
+
+    static int i = 0;
+    qDebug() << i++;
 }
 
 void MapFileClass::parseMapFile()

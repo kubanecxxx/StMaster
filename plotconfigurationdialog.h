@@ -19,6 +19,8 @@ public:
     explicit PlotConfigurationDialog(
             PlotWidget & plot,MainWindow::VarList_t & vars,QWidget *parent = 0);
     ~PlotConfigurationDialog();
+
+     typedef enum {TYPE = Qt::UserRole, VARIABLE = Qt::UserRole + 4} comboCustomData_t;
     
 private slots:
     void CellActivated(QModelIndex index);
@@ -37,6 +39,8 @@ private:
     QMenu * TableMenu;
     DragDropModel * modelList;
     DragDropModel * modelTable;
+
+
 };
 
 #endif // PLOTCONFIGURATIONDIALOG_H

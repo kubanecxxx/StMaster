@@ -19,11 +19,12 @@ Variable::Variable(KelnetClient * kelnet, QObject *parent) :
     Address(0x20000000),
     Type(uint32),
     timer(new QTimer),
-    offset(4),
+    offset(0),
     size (4),
     OnlyAddress(false),
     base(10)
 {
+    tableLine = -1;
     interpolation.k = 1;
     interpolation.q = 0;
     prepareTypes();
@@ -59,7 +60,7 @@ void Variable::NewData(quint32 addres, QByteArray &data)
     if (addres != GetAddressOffset())
         return;
 
-    Q_ASSERT(data.count() == size);
+    //Q_ASSERT(data.count() == size);
 
     memset(this->data.c,0,sizeof(type_union));
     memcpy(this->data.c,data.constData(),size);

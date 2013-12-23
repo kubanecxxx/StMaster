@@ -12,6 +12,7 @@ public:
     QStringList mimeTypes() const;
      QMimeData *mimeData(const QModelIndexList &indexes) const;
 
+
 signals:
     
 public slots:

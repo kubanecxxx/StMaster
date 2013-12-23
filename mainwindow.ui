@@ -120,6 +120,7 @@
    <addaction name="separator"/>
    <addaction name="actionConnect"/>
    <addaction name="actionMapFile"/>
+   <addaction name="actionRefresh"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionNew">
@@ -131,7 +132,7 @@
     <string>New</string>
    </property>
    <property name="toolTip">
-    <string>New settings</string>
+    <string>New workspace</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
@@ -146,7 +147,7 @@
     <string>Save</string>
    </property>
    <property name="toolTip">
-    <string>Save settings</string>
+    <string>Save workspace</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
@@ -161,7 +162,7 @@
     <string>Save As</string>
    </property>
    <property name="toolTip">
-    <string>Save settings as</string>
+    <string>Save workspace as</string>
    </property>
   </action>
   <action name="actionOpen">
@@ -173,7 +174,7 @@
     <string>Open</string>
    </property>
    <property name="toolTip">
-    <string>Open settings from file</string>
+    <string>Open existing workspace</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
@@ -203,7 +204,7 @@
     <string>Map file</string>
    </property>
    <property name="toolTip">
-    <string>Set map file</string>
+    <string>Select map file</string>
    </property>
   </action>
   <action name="actionAdd_new_plot">
@@ -231,6 +232,18 @@
    </property>
    <property name="text">
     <string>Remove plot</string>
+   </property>
+  </action>
+  <action name="actionRefresh">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/refresh</normaloff>:/icons/refresh</iconset>
+   </property>
+   <property name="text">
+    <string>Refresh</string>
+   </property>
+   <property name="toolTip">
+    <string>Reload map file</string>
    </property>
   </action>
  </widget>

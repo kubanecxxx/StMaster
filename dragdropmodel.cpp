@@ -1,10 +1,13 @@
 #include "dragdropmodel.h"
 #include <QMimeData>
 #include "variable.h"
+#include "plotconfigurationdialog.h"
 
 DragDropModel::DragDropModel(QObject *parent) :
     QStandardItemModel(parent)
 {
+    setSupportedDragActions(Qt::MoveAction);
+
 }
 
 bool DragDropModel::dropMimeData(const QMimeData *data, Qt::DropAction action,
@@ -47,7 +50,7 @@ QMimeData * DragDropModel::mimeData(const QModelIndexList &indexes) const
 
     for (int i = 0 ; i < indexes.count(); i++)
     {
-        QVariant  var =this->data(indexes.at(i),Qt::UserRole+ 1);
+        QVariant  var =this->data(indexes.at(i),PlotConfigurationDialog::VARIABLE);
         bool ok = var.isValid();
         Q_ASSERT(ok);
         Variable* temo = var.value<Variable*>();

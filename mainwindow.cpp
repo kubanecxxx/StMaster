@@ -47,6 +47,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->mainToolBar->addSeparator();
     ui->mainToolBar->addWidget(MapFile);
 
+
     QStringList header;
     header << "Name" << "Type" << "Address" << "Period" << "Value" << "Float"  << "Modify";
     ui->Table->setHorizontalHeaderLabels(header);
@@ -70,6 +71,8 @@ MainWindow::MainWindow(QWidget *parent) :
     plotMenu->addSeparator();
     plotMenu->addAction(ui->actionEdit_plot);
     plotMenu->addAction(ui->actionRemove_plot);
+
+    connect(ui->actionRefresh,SIGNAL(triggered()),Map,SLOT(FileChanged()));
 }
 
 MainWindow::~MainWindow()
@@ -85,7 +88,8 @@ void MainWindow::RefreshTable()
 
     for (int i = 0 ; i < variables.count(); i++)
     {
-        FillRow(i,*variables.at(i));
+        FillRow(i,*variables.values().at(i));
+        variables.values().at(i)->tableLine = i;
     }
 
     connect(ui->Table,SIGNAL(cellChanged(int,int)),this,SLOT(CellActivated(int,int)));
@@ -96,25 +100,25 @@ void MainWindow::FillRow(int row, const Variable &var)
     QTableWidgetItem * item;
     item = new QTableWidgetItem(var.GetName());
     item->setFlags(Qt::ItemIsEnabled);
-    ui->Table->setItem(row,0, item);
+    ui->Table->setItem(row,NAME, item);
     item = new QTableWidgetItem(QString("0x%1").arg(var.GetAddressOffset(),0,16));
     item->setFlags(Qt::ItemIsEnabled);
-    ui->Table->setItem(row,2,item);
+    ui->Table->setItem(row,ADDRESS,item);
     item = new QTableWidgetItem(var.GetType());
     item->setFlags(Qt::ItemIsEnabled);
-    ui->Table->setItem(row,1,item);
+    ui->Table->setItem(row,TYPE,item);
     item = new QTableWidgetItem(QString("%1 ms").arg(var.RefreshTime()));
     item->setFlags(Qt::ItemIsEnabled);
-    ui->Table->setItem(row,3,item);
+    ui->Table->setItem(row,PERIOD,item);
     item = new QTableWidgetItem("");
     item->setFlags(Qt::ItemIsEnabled);
-    ui->Table->setItem(row, 4, item);
+    ui->Table->setItem(row, VALUE, item);
     item = new QTableWidgetItem("");
     item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsEditable);
-    ui->Table->setItem(row, 6, item);
+    ui->Table->setItem(row, MODIFY, item);
     item = new QTableWidgetItem("");
     item->setFlags(Qt::ItemIsEnabled);
-    ui->Table->setItem(row, 5, item);
+    ui->Table->setItem(row, FLOAT, item);
 }
 
 void MainWindow::AddNewRow()
@@ -123,7 +127,7 @@ void MainWindow::AddNewRow()
     VariableDialog dlg(var,Map,this);
     if (dlg.exec() == QDialog::Accepted)
     {
-        variables.push_back(var);
+        variables.insert(var->GetName(),var);
         var->connectNewSample(this,SLOT(VariableModified()));
         RefreshTable();
 
@@ -138,22 +142,24 @@ void MainWindow::AddNewRow()
 
 void MainWindow::RemoveRow(int row)
 {
-    Variable * var = variables.at(row);
+    QString name = ui->Table->item(row,NAME)->text();
+    Variable * var = variables.value(name);
     var->deleteLater();
-    variables.removeAt(row);
+    variables.remove(name);
     RefreshTable();
 }
 
 void MainWindow::EditRow(int row)
 {
-    VariableDialog dlg(variables.at(row),Map,this);
+    QString name = ui->Table->item(row,NAME)->text();
+    VariableDialog dlg(variables.value(name),Map,this);
     dlg.exec();
     RefreshTable();
 }
 
 void MainWindow::CellDoubleClicked(int row, int count)
 {
-    if (count != 6)
+    if (count != MODIFY)
     {
         EditRow(row);
     }
@@ -161,9 +167,10 @@ void MainWindow::CellDoubleClicked(int row, int count)
 
 void MainWindow::CellActivated(int row, int count)
 {
-    if (count == 6)
+    if (count == MODIFY)
     {
-        variables[row]->ModifyVariable(ui->Table->item(row,count)->text());
+        QString name = ui->Table->item(row,NAME)->text();
+        variables.value(name)->ModifyVariable(ui->Table->item(row,count)->text());
         ui->Table->item(row,count)->setText("");
     }
 }
@@ -196,10 +203,10 @@ void MainWindow::NewCoreStatus(QString &coreStatus)
 void MainWindow::VariableModified()
 {
     Variable * var = qobject_cast<Variable *> (sender());
-    int i = variables.indexOf(var);
+    int i = var->tableLine;
     QString str = var->GetData();
-    ui->Table->item(i,4)->setText(str);
-    ui->Table->item(i,5)->setText(QString("%1").arg(var->GetDouble()));
+    ui->Table->item(i,VALUE)->setText(str);
+    ui->Table->item(i,FLOAT)->setText(QString("%1").arg(var->GetDouble()));
 }
 
 void MainWindow::on_actionConnect_triggered()
@@ -222,17 +229,11 @@ void MainWindow::on_actionMapFile_triggered()
 
 void MainWindow::on_actionAdd_new_plot_triggered()
 {
-    PlotWidget * plot = new PlotWidget;
-    plot->setTitle("newPlot");
-    plot->setProperty("xAutoScale",true);
-    plot->setProperty("yAutoScale",true);
-    plot->SetMaxPoints(200);
-    plot->setProperty("xValueTime",true);
+    PlotWidget * plot = new PlotWidget(this);
 
     PlotConfigurationDialog dlg(*plot,variables,this);
     if (dlg.exec() == QDialog::Accepted)
     {
-        plot->setContextMenuPolicy(Qt::CustomContextMenu);
         connect(plot,SIGNAL(customContextMenuRequested(QPoint)),this,
                 SLOT(PlotContextMenuRequest(QPoint)));
         PlotList.push_back(plot);
@@ -387,7 +388,7 @@ void MainWindow::loadXml(QFile &file)
         Variable * v = new Variable(client,this);
         v->loadXml(&var);
 
-        this->variables.push_back(v);
+        this->variables.insert(v->GetName(),v);
         v->connectNewSample(this,SLOT(VariableModified()));
 
         //next
@@ -403,7 +404,6 @@ void MainWindow::loadXml(QFile &file)
     {
         PlotWidget * pl = new PlotWidget(this);
         pl->loadXml(&plot);
-        pl->setContextMenuPolicy(Qt::CustomContextMenu);
         connect(pl,SIGNAL(customContextMenuRequested(QPoint)),this,
                 SLOT(PlotContextMenuRequest(QPoint)));
         PlotList.push_back(pl);

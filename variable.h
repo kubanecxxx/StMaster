@@ -60,6 +60,8 @@ public:
     void loadXml (QDomElement * par);
     static const QStringList & GetTypes();
 
+    int tableLine;
+
 signals:
     void NewSample(type_union);
 

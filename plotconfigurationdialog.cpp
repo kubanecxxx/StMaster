@@ -33,75 +33,9 @@ PlotConfigurationDialog::PlotConfigurationDialog(
     ui->tableUsedVaribles->setModel(modelTable);
 
     /*******************************************************************
-     * fill combo box x-value and availible variables list
-     ******************************************************************/
-    ui->comboXValue->addItem(QIcon::fromTheme("input-mouse"),"Time");
-    ui->comboXValue->insertSeparator(1);
-
-    for (int i = 0 ; i < vars.count(); i++)
-    {
-        Variable & var = *vars.at(i);
-        QStandardItem * item = new QStandardItem(var.GetName());
-        item->setData(var);
-        modelList->appendRow(item);
-        ui->comboXValue->addItem(var.GetName(),var);
-    }
-
-    ui->lineTitle->setText(Plot.title());
-
-    /*******************************************************************
-     * setup axes ranges
-     ******************************************************************/
-    QCPRange range = Plot.xAxis->range();
-    ui->spinXMin->setValue(range.lower);
-    ui->spinXMax->setValue(range.upper);
-
-    range = Plot.yAxis->range();
-    ui->spinYMin->setValue(range.lower);
-    ui->spinYMax->setValue(range.upper);
-
-    //setup autoscales
-    ui->checkXAutoScale->setChecked(Plot.property("xAutoScale").toBool());
-    ui->checkYAutoScale->setChecked(Plot.property("yAutoScale").toBool());
-    ui->spinMaxPoints->setValue(Plot.MaxPoints());
-
-    /*******************************************************************
-     * setup combo with x-value
-     ******************************************************************/
-    if (Plot.property("xValueTime").toBool())
-    {
-        ui->comboXValue->setCurrentIndex(0);
-    }
-    else
-    {
-        Variable * var = Plot.property("xValue").toVariable();
-        Q_ASSERT(var);
-        int i = ui->comboXValue->findData(*var);
-        if (i == -1)
-            i = 0;
-        ui->comboXValue->setCurrentIndex(i);
-    }
-
-    /*******************************************************************
-     * setup used variables table
-     ******************************************************************/ 
-    connect(ui->tableUsedVaribles,SIGNAL(doubleClicked(QModelIndex)),
-            this,SLOT(CellActivated(QModelIndex)));
-    ui->tableUsedVaribles->setContextMenuPolicy(Qt::CustomContextMenu);
-    ui->tableUsedVaribles->verticalHeader()->setVisible(false);
-
-    QStringList header;
-    header << "Variable" << "Color";
-    modelTable->setHorizontalHeaderLabels(header);
-    connect(ui->tableUsedVaribles,SIGNAL(customContextMenuRequested(QPoint)),
-            this,SLOT(TableContextMenuRequest(QPoint)));
-
-    TableMenu = new QMenu(this);
-    TableMenu->addAction(QIcon::fromTheme("edit-delete"),"del",this,SLOT(DeleteVariable()));
-
-    /*******************************************************************
      * fill used variables - from graph
      ******************************************************************/
+    QList<Variable *> temp;
     for (int i = 0; i < Plot.graphCount(); i++)
     {
         Variable * var = Plot.graph(i)->property("Variable").toVariable();
@@ -120,7 +54,88 @@ PlotConfigurationDialog::PlotConfigurationDialog(
         list.push_back(name);
         list.push_back(color);
         modelTable->appendRow(list);
+        temp.push_back(var);
     }
+
+    /*******************************************************************
+     * fill combo box x-value and availible variables list
+     ******************************************************************/
+    ui->comboXValue->addItem("Relative time",PlotWidget::RELATIVE_TIME);
+    ui->comboXValue->addItem("Real time", PlotWidget::REAL_TIME);
+    ui->comboXValue->insertSeparator(2);
+
+    foreach (Variable * var, vars)
+    {
+        //Variable & var = *vars.at(i);
+        //item to right list
+        if (!temp.contains(var))
+        {
+            QStandardItem * item = new QStandardItem(var->GetName());
+            item->setData(*var,VARIABLE);
+            modelList->appendRow(item);
+        }
+
+        //combo x value
+        ui->comboXValue->addItem(var->GetName());
+        int i = ui->comboXValue->count() - 1;
+        ui->comboXValue->setItemData(i,*var,VARIABLE);
+        ui->comboXValue->setItemData(i,PlotWidget::CUSTOM,TYPE);
+    }
+
+    ui->lineTitle->setText(Plot.title());
+
+    /*******************************************************************
+     * setup axes ranges
+     ******************************************************************/
+    QCPRange range = Plot.xAxis->range();
+    ui->spinXMin->setValue(range.lower);
+    ui->spinXMax->setValue(range.upper);
+
+    range = Plot.yAxis->range();
+    ui->spinYMin->setValue(range.lower);
+    ui->spinYMax->setValue(range.upper);
+
+    //setup autoscales
+    ui->checkXAutoScale->setChecked(Plot.xAutoScale);
+    ui->checkYAutoScale->setChecked(Plot.yAutoScale);
+    ui->spinMaxPoints->setValue(Plot.MaxPoints());
+
+    /*******************************************************************
+     * setup combo with x-value
+     ******************************************************************/
+
+    int i = ui->comboXValue->findData(plot.xvalue,TYPE);
+    ui->comboXValue->setCurrentIndex(i);
+
+    if (plot.xvalue == PlotWidget::CUSTOM)
+    {
+        Variable * var = plot.customXValue;
+        Q_ASSERT(var);
+        int i = ui->comboXValue->findData(*var,VARIABLE);
+        if (i == -1)
+            i = 0;
+        ui->comboXValue->setCurrentIndex(i);
+    }
+
+
+    /*******************************************************************
+     * setup used variables table
+     ******************************************************************/ 
+    connect(ui->tableUsedVaribles,SIGNAL(doubleClicked(QModelIndex)),
+            this,SLOT(CellActivated(QModelIndex)));
+    ui->tableUsedVaribles->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->tableUsedVaribles->verticalHeader()->setVisible(false);
+
+    QStringList header;
+    header << "Variable" << "Color";
+    modelTable->setHorizontalHeaderLabels(header);
+    connect(ui->tableUsedVaribles,SIGNAL(customContextMenuRequested(QPoint)),
+            this,SLOT(TableContextMenuRequest(QPoint)));
+
+    TableMenu = new QMenu(this);
+    TableMenu->addAction(QIcon::fromTheme("edit-delete"),"del",this,SLOT(DeleteVariable()));
+
+
 }
 
 /*******************************************************************
@@ -132,15 +147,14 @@ void PlotConfigurationDialog::on_buttonBox_accepted()
     /*******************************************************************
      * setup axis limits from spin boxes
      ******************************************************************/
-    bool check;
-    Plot.setProperty("xAutoScale",check = ui->checkXAutoScale->isChecked());
-    if (!check)
+    Plot.xAutoScale = ui->checkXAutoScale->isChecked();
+    if (!Plot.xAutoScale)
     {
         Plot.xAxis->setRangeLower(ui->spinXMin->value());
         Plot.xAxis->setRangeUpper(ui->spinXMax->value());
     }
-    Plot.setProperty("yAutoScale",check = ui->checkYAutoScale->isChecked());
-    if (!check)
+    Plot.yAutoScale = ui->checkYAutoScale->isChecked();
+    if (!Plot.yAutoScale)
     {
         Plot.yAxis->setRangeLower(ui->spinYMin->value());
         Plot.yAxis->setRangeUpper(ui->spinYMax->value());
@@ -172,16 +186,17 @@ void PlotConfigurationDialog::on_buttonBox_accepted()
     /*******************************************************************
      * setup title, x-value and maximum points
      ******************************************************************/
-    if (ui->comboXValue->currentIndex() == 0)
-    {
-        Plot.setProperty("xValueTime",true);
-    }
-    else
-    {
-        Plot.setProperty("xValueTime",false);
-        Plot.setProperty("xValue",ui->comboXValue->itemData(ui->comboXValue->currentIndex()));
-    }
+    int idx = ui->comboXValue->currentIndex();
+    bool valid = ui->comboXValue->itemData(idx,VARIABLE).isValid();
+    Plot.xvalue = static_cast<PlotWidget::xvalue_t>
+            (ui->comboXValue->itemData(idx,TYPE).toInt());
+
+    Plot.customXValue = ui->comboXValue->itemData(idx,VARIABLE).toVariable();
+    if (Plot.xvalue == PlotWidget::CUSTOM)
+        Q_ASSERT(Plot.customXValue);
+
     Plot.SetMaxPoints(ui->spinMaxPoints->value());
+
     Plot.setTitle(ui->lineTitle->text());
     Plot.Start();
 
@@ -241,6 +256,10 @@ void PlotConfigurationDialog::DeleteVariable()
     DeletedVariables.push_back(var);
 
     modelTable->removeRow(row);
+
+    QStandardItem * it = new QStandardItem(var->GetName());
+    it->setData(*var,VARIABLE);
+    modelList->appendRow(it);
 }
 
 PlotConfigurationDialog::~PlotConfigurationDialog()
