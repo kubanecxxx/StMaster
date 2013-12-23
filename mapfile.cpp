@@ -12,7 +12,7 @@ MapFileClass::MapFileClass(QString & file, MainWindow::VarList_t & vars , QObjec
     //connect(&watcher,SIGNAL(fileChanged(QString)),this,SLOT(FileChanged(QString)));
 }
 
-void MapFileClass::SetFile(QString &fil)
+void MapFileClass::SetFile(const QString &fil)
 {
     file->setFileName(fil);
     parseMapFile();

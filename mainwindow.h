@@ -3,11 +3,13 @@
 
 #include <QMainWindow>
 #include <QMap>
+#include <QCloseEvent>
 
 namespace Ui {
 class MainWindow;
 }
 
+class QToolButton;
 class PlotProperties;
 class QSplitter;
 class QLabel;
@@ -54,6 +56,26 @@ private:
     void saveXml(QFile & file);
     void loadXml(QFile & file);
 
+    static QString settingFile;
+    static QString appName;
+    static int recentHistorySize;
+    void loadIni();
+    void saveIni() const;
+    void closeEvent(QCloseEvent * evt);
+    QStringList recentWorkspaces;
+    QStringList recentMapFiles;
+    QString currentWorkspace;
+
+    void clearWorkspace();
+    void openFile(const QString & path);
+    void loadMapFile(const QString & path);
+    void setWorkspaceName(const QString & name);
+
+    void addRecentFile(QToolButton * but, QStringList & list, const QString & path, bool front);
+    void addRecentWorkspace(const QString & path, bool front = true);
+    void addRecentMapFile(const QString & path, bool front = true);
+
+
 signals:
     void TimerStart();
     void TimerStop();
@@ -80,6 +102,10 @@ private slots:
     void on_actionRemove_plot_triggered();
     void on_actionSave_triggered();
     void on_actionOpen_triggered();
+    void on_actionNew_triggered();
+    void on_actionSaveAs_triggered();
+    void action_openFile();
+    void action_loadMapFile();
 
 public:
      VarList_t  GetVarList() const {return variables;}

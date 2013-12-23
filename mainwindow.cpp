@@ -17,6 +17,12 @@
 #include <QCoreApplication>
 #include <QDomDocument>
 #include <QDomNode>
+#include <QSettings>
+#include <QToolButton>
+
+QString MainWindow::settingFile = "stmaster.ini";
+QString MainWindow::appName = "StMaster";
+int MainWindow::recentHistorySize = 10;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -73,6 +79,100 @@ MainWindow::MainWindow(QWidget *parent) :
     plotMenu->addAction(ui->actionRemove_plot);
 
     connect(ui->actionRefresh,SIGNAL(triggered()),Map,SLOT(FileChanged()));
+
+    ui->mainToolBar->insertWidget(ui->actionConnect,ui->toolOpen);
+    ui->mainToolBar->insertSeparator(ui->actionConnect);
+    ui->mainToolBar->insertWidget(ui->actionRefresh,ui->toolMap);
+    connect(ui->toolOpen,SIGNAL(clicked()),this,SLOT(on_actionOpen_triggered()));
+    connect(ui->toolMap,SIGNAL(clicked()),this,SLOT(on_actionMapFile_triggered()));
+
+    for (int i = 0 ; i < recentHistorySize; i++)
+    {
+        QAction * a = new QAction(ui->toolOpen);
+        ui->toolOpen->addAction(a);
+        connect(a,SIGNAL(triggered()),this,SLOT(action_openFile()));
+        a->setVisible(false);
+
+        a = new QAction(ui->toolMap);
+        ui->toolMap->addAction(a);
+        connect(a,SIGNAL(triggered()),this,SLOT(action_loadMapFile()));
+        a->setVisible(false);
+    }
+
+    loadIni();
+    clearWorkspace();
+}
+
+void MainWindow::action_openFile()
+{
+    QAction * act = qobject_cast<QAction*>(sender());
+    Q_ASSERT(act);
+    openFile(act->text());
+}
+
+void MainWindow::action_loadMapFile()
+{
+    QAction * act = qobject_cast<QAction*>(sender());
+    Q_ASSERT(act);
+    loadMapFile(act->text());
+}
+
+void MainWindow::closeEvent(QCloseEvent *evt)
+{
+    saveIni();
+    evt->accept();
+}
+
+void MainWindow::loadIni()
+{
+
+    QSettings settings(QDir::currentPath()+"/"+settingFile,QSettings::IniFormat);
+
+    restoreGeometry(settings.value("main").toByteArray());
+    ui->splitter->restoreState(settings.value("splitter").toByteArray());
+
+    for (int i = 0 ; i < recentHistorySize; i++)
+    {
+        QString d = "recentWorkspace/";
+        QString str = settings.value(QString("%1workspace%2").arg(d).arg(i)).toString();
+        if (str.count())
+            addRecentWorkspace(str,false);
+    }
+
+    for (int i = 0 ; i < recentHistorySize; i++)
+    {
+        QString d = "recentMapFiles/";
+        QString str = settings.value(QString("%1mapfile%2").arg(d).arg(i)).toString();
+        if (str.count())
+            addRecentMapFile(str,false);
+    }
+
+}
+
+void MainWindow::saveIni() const
+{
+    QSettings settings(QDir::currentPath()+"/"+settingFile,QSettings::IniFormat);
+
+    //recent files
+    for (int i = 0 ; i < recentWorkspaces.count() && i < recentHistorySize; i++)
+    {
+        QString d = "recentWorkspace/";
+        settings.setValue(QString("%1workspace%2").arg(d).arg(i),recentWorkspaces.at(i));
+    }
+
+    //recent mapfiles
+    for (int i = 0 ; i < recentMapFiles.count() && i < recentHistorySize; i++)
+    {
+        QString d = "recentMapFiles/";
+        settings.setValue(QString("%1mapfile%2").arg(d).arg(i),recentMapFiles.at(i));
+    }
+
+    //window size
+    settings.setValue("main",saveGeometry());
+
+    //splitter size
+    settings.setValue("splitter",ui->splitter->saveState());
+
 }
 
 MainWindow::~MainWindow()
@@ -219,11 +319,10 @@ void MainWindow::on_actionConnect_triggered()
 
 void MainWindow::on_actionMapFile_triggered()
 {
-    MapFilePath = QFileDialog::getOpenFileName(this,"Open map file",MapFilePath,"Map files (*.map)");
-    if (MapFilePath.count())
+    QString temp = QFileDialog::getOpenFileName(this,"Open map file",MapFilePath,"Map files (*.map)");
+    if (temp.count())
     {
-        MapFile->setText(MapFilePath);
-        Map->SetFile(MapFilePath);
+        loadMapFile(temp);
     }
 }
 
@@ -346,19 +445,7 @@ void MainWindow::loadXml(QFile &file)
         return;
     }
 
-    /***************************************************
-     * tidy up in variable list and plot list
-     ***************************************************/
-    foreach (Variable * v, variables) {
-        v->deleteLater();
-    }
-    variables.clear();
-
-    foreach(PlotWidget * p, PlotList )
-    {
-        p->deleteLater();
-    }
-    PlotList.clear();
+    clearWorkspace();
 
     /***************************************************
      * start
@@ -374,8 +461,8 @@ void MainWindow::loadXml(QFile &file)
      * load map file
      ***************************************************/
     QDomElement map = element.firstChildElement("mapFile");
-    MapFilePath = map.attribute("path").toUtf8();
-    Map->SetFile(MapFilePath);
+    QString temp = map.attribute("path").toUtf8();
+    loadMapFile(temp);
 
     /***************************************************
      * load variable list
@@ -420,16 +507,134 @@ void MainWindow::loadXml(QFile &file)
      ***************************************************/
     RefreshTable();
     MapFile->setText(MapFilePath);
+    setWorkspaceName(file.fileName());
+}
+
+void MainWindow::clearWorkspace()
+{
+    /***************************************************
+     * tidy up in variable list and plot list
+     ***************************************************/
+    foreach (Variable * v, variables) {
+        v->deleteLater();
+    }
+    variables.clear();
+
+    foreach(PlotWidget * p, PlotList )
+    {
+        p->deleteLater();
+    }
+    PlotList.clear();
+
+    MapFilePath.clear();
+    MapFile->setText("None");
+    Map->SetFile(MapFilePath);
+    currentWorkspace.clear();
+
+    setWorkspaceName("NoName");
+    RefreshTable();
+}
+
+void MainWindow::setWorkspaceName(const QString &name)
+{
+    setWindowTitle(appName + " [ " + name + " ]");
 }
 
 void MainWindow::on_actionSave_triggered()
 {
-    QFile f("trouba.xml");
-    saveXml(f);
+    if (currentWorkspace.count())
+    {
+        QFile f(currentWorkspace);
+        saveXml(f);
+    }
+    else
+    {
+        on_actionSaveAs_triggered();
+    }
 }
 
 void MainWindow::on_actionOpen_triggered()
 {
-    QFile f("trouba.xml");
+    QString p;
+    if (recentWorkspaces.count())
+        p = recentWorkspaces.at(0);
+    QString temp = QFileDialog::getOpenFileName
+            (this,tr("Open workspace file"),p,"workspace xml (*.xml)");
+    if (temp.count())
+    {
+        openFile(temp);
+    }
+}
+
+void MainWindow::on_actionNew_triggered()
+{
+    clearWorkspace();
+}
+
+void MainWindow::on_actionSaveAs_triggered()
+{
+    QString p;
+    if (recentWorkspaces.count())
+    {
+        p = recentWorkspaces.at(0);
+        p.remove(p.lastIndexOf("/"),p.count() - p.lastIndexOf("/"));
+    }
+    QString temp = QFileDialog::getSaveFileName
+            (this,tr("Save workspace file"),p,"workspace xml (*.xml)");
+    if (temp.count())
+    {
+        QFile f(temp);
+        saveXml(f);
+        currentWorkspace = temp;
+        setWorkspaceName(temp);
+        addRecentWorkspace(temp);
+    }
+}
+
+void MainWindow::addRecentFile(QToolButton *but, QStringList &list, const QString &path, bool front)
+{
+    list.removeOne(path);
+    if (front)
+        list.push_front(path);
+    else
+        list.push_back(path);
+
+
+    foreach (QAction * a , but->actions())
+    {
+        a->setVisible(false);
+    }
+
+    QList<QAction *> lst = but->actions();
+    for (int i = 0 ; i < list.count() ; i++)
+    {
+        lst.at(i)->setText(list.at(i));
+        lst.at(i)->setVisible(true);
+    }
+}
+
+void MainWindow::openFile(const QString &path)
+{
+    QFile f(path);
     loadXml(f);
+    currentWorkspace = path;
+    addRecentWorkspace(path);
+}
+
+void MainWindow::loadMapFile(const QString &path)
+{
+    MapFilePath = path;
+    Map->SetFile(path);
+    MapFile->setText(path);
+    addRecentMapFile(path);
+}
+
+void MainWindow::addRecentMapFile(const QString &path, bool front)
+{
+    addRecentFile(ui->toolMap,recentMapFiles,path,front);
+}
+
+void MainWindow::addRecentWorkspace(const QString &path, bool front)
+{
+    addRecentFile(ui->toolOpen,recentWorkspaces,path,front);
 }

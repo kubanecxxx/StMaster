@@ -18,7 +18,7 @@ public:
 
     QStringList GetVars() {return Vars.keys();}
     quint32 GetAddress (const QString & var) {return Vars.value(var);}
-    void SetFile(QString & file);
+    void SetFile(const QString & file);
     
 signals:
     
